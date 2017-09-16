@@ -1,5 +1,6 @@
 import {AfterViewInit, Component, OnInit, ViewChild, ElementRef, Input, HostListener} from '@angular/core';
 import {EnterpriseModelInitialDataLoader, GraphModel} from '../graph-model/graph-model';
+import '../js/EnableThreeExamples';
 import * as THREE from 'three';
 import {CircleAutoGraphRenderer} from './three-graph-renderer';
 
