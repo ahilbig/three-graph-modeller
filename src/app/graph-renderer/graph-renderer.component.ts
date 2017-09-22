@@ -1,8 +1,10 @@
 import {AfterViewInit, Component, OnInit, ViewChild, ElementRef, Input, HostListener} from '@angular/core';
-import {EnterpriseModelInitialDataLoader, GraphModel} from '../graph-model/graph-model';
+import {EnterpriseModelInitialDataLoader, GraphModel, IDictionary} from '../graph-model/graph-model';
 import '../js/EnableThreeExamples';
 import * as THREE from 'three';
 import {CircleAutoGraphRenderer} from './three-graph-renderer';
+import {Vertex, extend} from "../graph-model/vertex";
+import {Object3D} from "../../../types/three/three-core";
 
 @Component({
   selector: 'app-graph-renderer',
@@ -25,8 +27,6 @@ export class GraphRendererComponent implements AfterViewInit {
 
   @ViewChild('canvas')
   private canvasRef: ElementRef;
-
-  private objects: THREE.Object3D[];
 
   private renderer: THREE.WebGLRenderer;
 
@@ -57,17 +57,6 @@ export class GraphRendererComponent implements AfterViewInit {
 
   /* STAGING, ANIMATION, AND RENDERING */
 
-  /**
-   * Animate the objects
-   */
-  private animateObjects() {
-    if (this.objects) {
-      for (let i = 0; i < this.objects.length; i++) {
-          this.objects[i].rotation.x += this.rotationSpeedX;
-        this.objects[i].rotation.y += this.rotationSpeedY;
-      }
-    }
-  }
 
   /**
    * Create the scene
@@ -137,13 +126,13 @@ export class GraphRendererComponent implements AfterViewInit {
     this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
 
     this.renderer.setClearColor(this.scene.fog.color);
-    console.log('renderer width=%d, height=%d', this.renderer.getSize().width, this.renderer.getSize().height);
+    console.log('renderer width=" + this.renderer.getSize().width + ", height=' + this.renderer.getSize().height);
     this.createControls();
 
     const component: GraphRendererComponent = this;
     (function render() {
       requestAnimationFrame(render);
-      component.animateObjects();
+      component.graphRenderer.animateObjects();
       component.renderer.render(component.scene, component.camera);
     }());
   }
@@ -178,21 +167,28 @@ export class GraphRendererComponent implements AfterViewInit {
   public ngAfterViewInit() {
     this.createScene();
 
-    this.graphRenderer = new CircleAutoGraphRenderer(this.scene, this.defaultObjectSize);
-    this.graphModel = new EnterpriseModelInitialDataLoader().loadGraphModel();
-    this.graphRenderer.autoRender(this.graphModel);
-    this.objects = this.graphRenderer.meshObjects;
+    this.graphRenderer = new CircleAutoGraphRenderer(this.scene, this.defaultObjectSize, this.rotationSpeedX, this.rotationSpeedY);
+    this.graphModel = new GraphModel(this.graphRenderer);
+    this.graphRenderer.graphModel = this.graphModel;
+
+    EnterpriseModelInitialDataLoader.initializeGraphModel(this.graphModel);
+
+    this.graphRenderer.autoLayout();
     this.startRenderingLoop();
   }
 
   private createControls() {
-    const dragControls = new THREE.DragControls(this.objects, this.camera, this.renderer.domElement);
+
+    const dragControls = new THREE.DragControls(this.graphModel.getVertexArray(), this.camera, this.renderer.domElement);
+
     const component: GraphRendererComponent = this;
 
-    dragControls.addEventListener('dragstart', function (event) {
+    dragControls.addEventListener('dragstart', (event: Event) => {
       component.controls.enabled = false;
     });
-    dragControls.addEventListener('dragend', function (event) {
+    dragControls.addEventListener('dragend', (event: Event) => {
+      console.log("dragend event detected, rendering edges");
+      component.graphRenderer.autoLayoutEdges();
       component.controls.enabled = true;
     });
   }

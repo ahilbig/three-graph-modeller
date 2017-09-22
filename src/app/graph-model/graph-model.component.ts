@@ -13,8 +13,3 @@ export class GraphModelComponent implements OnInit {
   ngOnInit() {
   }
 }
-
-
-export interface GraphModelLoader {
-  loadGraphModel(): GraphModel;
-}

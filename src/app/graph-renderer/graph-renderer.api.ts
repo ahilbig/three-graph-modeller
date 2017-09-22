@@ -6,14 +6,20 @@ import {Edge} from '../graph-model/edge';
  */
 
 export interface AutoGraphRenderer {
-  autoRender(graphModel: GraphModel);
-  autoRenderAddVertex(graphModel: GraphModel, vertex: Vertex);
-  autoRenderAddEdge(graphModel: GraphModel, edge: Edge, moveVertexes?: boolean);
+  autoLayout();
+  autoLayoutEdges();
+  autoLayoutAddedVertex(vertex: Vertex);
+  autoLayoutEdge(edge: Edge);
+  autoLayoutRemovedVertex(vertex: Vertex);
+  autoLayoutRemovedEdge(edge: Edge);
+
+  addRenderedVertexToGraph(vertex: Vertex, position ?): Vertex;
+  addRenderedEdgeToGraph(edge: Edge);
 }
 
 
 export interface VertexRenderer {
-  createRenderingInfo(vertex: Vertex);
+  createVertexRenderingMixin(vertex: Vertex);
 }
 
 export interface AutoEdgeRenderer {
