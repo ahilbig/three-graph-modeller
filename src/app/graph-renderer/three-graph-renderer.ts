@@ -1,15 +1,22 @@
 ///<reference path="graph-renderer.component.ts"/>
 import * as THREE from 'three';
+import * as THREEx from 'threex.domevents';
+
 import {GraphModel} from '../graph-model/graph-model';
 import {AutoGraphRenderer, VertexRenderer} from './graph-renderer.api';
 import {extend, Vertex} from '../graph-model/vertex';
 import {Edge} from '../graph-model/edge';
+import {GraphControl} from "../graph-control-component/graph-control";
+import {Camera} from "../../../types/three/three-core";
+
+import '../js/EnableThreeJs.js';
 
 /**
  * Created by Andreas Hilbig on 11.09.2017.
  */
 
 export class CircleAutoGraphRenderer implements AutoGraphRenderer {
+
   private vertexRenderer: ThreeAutoVertexFromTypeRenderer = new ThreeAutoVertexFromTypeRenderer();
 
   private _scene: THREE.Scene;
@@ -17,15 +24,25 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
   private rotationSpeedX = 0;
   private rotationSpeedY = 0;
   private _graphModel: GraphModel;
+  private graphControl: GraphControl;
+  domEvents: THREEx.DomEvents;
 
-  constructor( scene: THREE.Scene, defaultObjectSize: number, rotationSpeedX: number, rotationSpeedY: number, graphModel?: GraphModel) {
+  constructor(scene: THREE.Scene, defaultObjectSize: number, rotationSpeedX: number, rotationSpeedY: number, graphModel?: GraphModel) {
     this._scene = scene;
     this._defaultObjectSize = defaultObjectSize;
     this.rotationSpeedX = rotationSpeedX;
     this.rotationSpeedY = rotationSpeedY;
     this._graphModel = graphModel;
+    this.graphControl = new GraphControl(this.graphModel);
   }
 
+  addEventListener(vertex: Vertex, type: string, listener: (event: Event) => void, withBoundingBox?: boolean): void {
+    if (this.isObject3D(vertex)) {
+      this.domEvents.addEventListener(<THREE.Object3D> vertex, type, listener, withBoundingBox ? withBoundingBox : true);
+    } else {
+      throw new Error("Unable to register event - vertex is no 3D Object");
+    }
+  }
 
   get graphModel(): GraphModel {
     return this._graphModel;
@@ -33,6 +50,9 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
 
   set graphModel(value: GraphModel) {
     this._graphModel = value;
+    if (this.graphControl) {
+      this.graphControl.graphModel = value;
+    }
   }
 
   get defaultObjectSize(): number {
@@ -62,11 +82,11 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     let i = 0;
     for (let id in this._graphModel.vertexes) {
       const vertex = this._graphModel.vertexes[id];
-      if(this.isObject3D(vertex)) {
+      if (this.isObject3D(vertex)) {
         x = r * Math.sin(alpha * i);
         y = r * Math.cos(alpha * i);
 
-        console.log('Vertex vid=' + id + ', name=' + vertex.name + ', vtype=' + vertex.vtype + ' added at alpha=' + alpha * i + ',  position={' + x + ',' + y + ',' + z + '}.');
+        console.log('Vertex vid=' + id + ', name=' + vertex.vname + ', vtype=' + vertex.vtype + ' added at alpha=' + alpha * i + ',  position={' + x + ',' + y + ',' + z + '}.');
         this.setObject3DPosition(vertex, {x, y, z});
       } else {
         console.log('Can\'t render Vertex vid=' + id);
@@ -95,19 +115,49 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
   }
 
   addRenderedVertexToGraph(vertex: Vertex, position ?: THREE.Vector3): Vertex & THREE.Object3D {
+    var renderedVertex;
     if (this.isObject3D(vertex)) {
+      renderedVertex = vertex;
       if (position) {
         this.setObject3DPosition(vertex, position);
       }
-      return vertex;
     }
     else {
-      var renderedVertex = this.vertexRenderer.createVertexRenderingMixin(vertex, position);
-      this._graphModel.vertexes[renderedVertex.vid] = renderedVertex;
-      this.scene.add(renderedVertex);
-      return renderedVertex;
+      renderedVertex = this.vertexRenderer.createVertexRenderingMixin(vertex, position);
     }
+    var vid = vertex.vid;
+    if (!this._graphModel.vertexes[vid]) {
+      this._graphModel.vertexes[vid] = renderedVertex;
+      this.graphControl.addVertexControls(renderedVertex);
+      this.scene.add(renderedVertex);
+    }
+    return renderedVertex;
   }
+
+  cloneRenderedVertex(vertex: Vertex): Vertex {
+    var oldId = vertex.vid;
+    var newId = this.generateCloneId(oldId);
+    var cloneIndex = newId.split("-c")[1];
+    console.log("Cloning vertex with id=" + oldId + ", cloned id=" + newId);
+    var clonedVertex = new Vertex(newId, "Clone " + cloneIndex + " of " + vertex.vname, vertex.vtype);
+    var clonedRenderedVertex = extend((<THREE.Object3D> vertex).clone(), clonedVertex);
+    this.addRenderedVertexToGraph(clonedRenderedVertex);
+
+    return clonedRenderedVertex
+  }
+
+
+  generateCloneId(vid: string): string {
+    // Use -c seperator to split original id from clone index (if id is not id of a clone then the resulting array will have length 1)
+    var splitId = vid.split('-c');
+    var newCloneIndex = splitId.length == 1 ? 1 : parseInt(splitId[1]) + 1;
+
+    var candidateId = splitId[0] + '-c' + newCloneIndex;
+
+    // Return candidate Id if not exists, otherwise calculate next available clone id recursively
+    return this.graphModel.vertexes[candidateId] ? this.generateCloneId(candidateId) : candidateId;
+  }
+
   addRenderedEdgeToGraph(edge: Edge) {
     if (this.isObject3D(edge)) {
       return edge;
@@ -155,6 +205,10 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
       }
     }
   }
+
+  setupDomEvents(camera: Camera, domElement?: HTMLElement) {
+    this.domEvents = new THREEx.THREEx.DomEvents(camera, domElement);
+  }
 }
 
 export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
@@ -187,11 +241,11 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     return extend(mesh, vertex);
   }
 
-  createEdgeRenderingMixin(edge: Edge, fromVertex3D: THREE.Object3D, toVertex3D: THREE.Object3D ): Edge & THREE.Object3D {
+  createEdgeRenderingMixin(edge: Edge, fromVertex3D: THREE.Object3D, toVertex3D: THREE.Object3D): Edge & THREE.Object3D {
     if (fromVertex3D && toVertex3D) {
       return extend(this.createLine(fromVertex3D.position, toVertex3D.position), edge);
     } else {
-      console.log("Unable to render edge from vertex " + fromVertex3D? fromVertex3D.id:'?' + " to vertex " + toVertex3D? toVertex3D.id:'?' + ".");
+      console.log("Unable to render edge from vertex " + fromVertex3D ? fromVertex3D.id : '?' + " to vertex " + toVertex3D ? toVertex3D.id : '?' + ".");
     }
 
   }
@@ -246,6 +300,7 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     return new THREE.Line(geometry, material);
 
   }
+
   updateLineGeometry(line: THREE.Line, pos1: THREE.Vector3, pos2: THREE.Vector3): THREE.Line {
     line.geometry.vertices[0] = pos1;
     line.geometry.vertices[1] = pos2;

@@ -1,15 +1,15 @@
 import {RenderingInfo} from '../graph-renderer/graph-renderer.api';
 
 export class Vertex {
-  readonly vid: string;
-  name: string;
+  vid: string;
+  vname: string;
   vtype: string;
 
   constructor(id: string, name: string, type: string) {
     this.vid = id;
-    this.name = name;
+    this.vname = name;
     this.vtype = type;
-    console.log('Vertex constructed, vid=' + id + ', name=' + name + ', vtype=' + type);
+    console.log('Vertex constructed, vid=' + id + ', vname=' + name + ', vtype=' + type);
   }
 }
 

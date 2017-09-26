@@ -1,10 +1,9 @@
-import {AfterViewInit, Component, OnInit, ViewChild, ElementRef, Input, HostListener} from '@angular/core';
-import {EnterpriseModelInitialDataLoader, GraphModel, IDictionary} from '../graph-model/graph-model';
-import '../js/EnableThreeExamples';
-import * as THREE from 'three';
+import {AfterViewInit, Component, ElementRef, HostListener, Input, ViewChild} from '@angular/core';
+import {EnterpriseModelInitialDataLoader, GraphModel} from '../graph-model/graph-model';
+import '../js/EnableThreeJs';
+
 import {CircleAutoGraphRenderer} from './three-graph-renderer';
-import {Vertex, extend} from "../graph-model/vertex";
-import {Object3D} from "../../../types/three/three-core";
+import * as THREE from 'three';
 
 @Component({
   selector: 'app-graph-renderer',
@@ -76,22 +75,7 @@ export class GraphRendererComponent implements AfterViewInit {
     );
     this.camera.position.z = this.cameraZ;
 
-    // Prepare Orbit controls
-    this.controls = new THREE.OrbitControls(this.camera);
-    this.controls.target = new THREE.Vector3(0, 0, 0);
-    this.controls.maxDistance = 150;
-    // How far you can orbit vertically, upper and lower limits.
-    this.controls.minPolarAngle = 0;
-    this.controls.maxPolarAngle = Math.PI;
-    // How far you can dolly in and out ( PerspectiveCamera only )
-    this.controls.minDistance = 0;
-    this.controls.maxDistance = Infinity;
-
-    this.controls.enableZoom = true; // Set to false to disable zooming
-    this.controls.zoomSpeed = 1.0;
-
-    this.controls.enablePan = true; // Set to false to disable panning (ie vertical and horizontal translations)
-
+    //this.createOrbitControls();
     // Add lights
     this.scene.add(new THREE.AmbientLight(0x444444));
     const dirLight = new THREE.DirectionalLight(0xffffff);
@@ -119,15 +103,7 @@ export class GraphRendererComponent implements AfterViewInit {
    * Start the rendering loop
    */
   private startRenderingLoop() {
-    /* Renderer */
-    // Use canvas element in template
-    this.renderer = new THREE.WebGLRenderer({canvas: this.canvas});
-    this.renderer.setPixelRatio(devicePixelRatio);
-    this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
-
-    this.renderer.setClearColor(this.scene.fog.color);
-    console.log('renderer width=" + this.renderer.getSize().width + ", height=' + this.renderer.getSize().height);
-    this.createControls();
+   //this.createDragControls();
 
     const component: GraphRendererComponent = this;
     (function render() {
@@ -171,13 +147,28 @@ export class GraphRendererComponent implements AfterViewInit {
     this.graphModel = new GraphModel(this.graphRenderer);
     this.graphRenderer.graphModel = this.graphModel;
 
+    this.createWebGLRenderer();
+
     EnterpriseModelInitialDataLoader.initializeGraphModel(this.graphModel);
 
     this.graphRenderer.autoLayout();
     this.startRenderingLoop();
   }
 
-  private createControls() {
+  private createWebGLRenderer() {
+    /* Renderer */
+    // Use canvas element in template
+    this.renderer = new THREE.WebGLRenderer({canvas: this.canvas});
+    this.renderer.setPixelRatio(devicePixelRatio);
+    this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+
+    this.renderer.setClearColor(this.scene.fog.color);
+    this.graphRenderer.setupDomEvents(this.camera, this.renderer.domElement);
+
+    console.log('renderer width=" + this.renderer.getSize().width + ", height=' + this.renderer.getSize().height);
+  }
+
+  private createDragControls() {
 
     const dragControls = new THREE.DragControls(this.graphModel.getVertexArray(), this.camera, this.renderer.domElement);
 
@@ -187,10 +178,30 @@ export class GraphRendererComponent implements AfterViewInit {
       component.controls.enabled = false;
     });
     dragControls.addEventListener('dragend', (event: Event) => {
-      console.log("dragend event detected, rendering edges");
-      component.graphRenderer.autoLayoutEdges();
+      console.log("dragend event detected, enabling controls");
       component.controls.enabled = true;
     });
+    dragControls.addEventListener('drag', (event: Event) => {
+      component.graphRenderer.autoLayoutEdges();
+    });
+  }
+
+  private createOrbitControls() {
+    this.controls = new THREE.OrbitControls(this.camera);
+    this.controls.target = new THREE.Vector3(0, 0, 0);
+    this.controls.maxDistance = 150;
+    // How far you can orbit vertically, upper and lower limits.
+    this.controls.minPolarAngle = 0;
+    this.controls.maxPolarAngle = Math.PI;
+    // How far you can dolly in and out ( PerspectiveCamera only )
+    this.controls.minDistance = 0;
+    this.controls.maxDistance = Infinity;
+
+    this.controls.enableZoom = true; // Set to false to disable zooming
+    this.controls.zoomSpeed = 1.0;
+
+    this.controls.enablePan = true; // Set to false to disable panning (ie vertical and horizontal translations)
+
   }
 }
 

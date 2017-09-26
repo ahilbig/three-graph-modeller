@@ -1,6 +1,6 @@
-import {GraphModel} from '../graph-model/graph-model';
 import {Vertex} from '../graph-model/vertex';
 import {Edge} from '../graph-model/edge';
+
 /**
  * Created by Andreas Hilbig on 13.09.2017.
  */
@@ -13,8 +13,12 @@ export interface AutoGraphRenderer {
   autoLayoutRemovedVertex(vertex: Vertex);
   autoLayoutRemovedEdge(edge: Edge);
 
-  addRenderedVertexToGraph(vertex: Vertex, position ?): Vertex;
+  addRenderedVertexToGraph(vertex: Vertex, position ?, newId ?): Vertex;
   addRenderedEdgeToGraph(edge: Edge);
+
+  addEventListener(vertex: Vertex, type: string, listener: (event: Event) => any, withBoundingBox?: boolean): void;
+
+  cloneRenderedVertex(vertex: Vertex): Vertex;
 }
 
 

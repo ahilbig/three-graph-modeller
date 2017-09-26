@@ -25,6 +25,7 @@
     "rxjs": "^5.4.2",
     "three": "^0.87.1",
     "three-orbitcontrols-ts": "^0.1.2",
+    "threex.domevents": "^1.0.1",
     "zone.js": "^0.8.14"
   },
   "devDependencies": {

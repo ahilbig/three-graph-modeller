@@ -1,4 +1,3 @@
-import {Vertex} from './vertex';
 export class Edge {
   vertexFromId;
   vertexToId;
