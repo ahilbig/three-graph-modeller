@@ -7,7 +7,7 @@ import {AutoGraphRenderer, VertexRenderer} from './graph-renderer.api';
 import {extend, Vertex} from '../graph-model/vertex';
 import {Edge} from '../graph-model/edge';
 import {GraphControl} from "../graph-control-component/graph-control";
-import {Camera} from "../../../types/three/three-core";
+import {Camera, Font, TextGeometryParameters} from "../../../types/three/three-core";
 
 import '../js/EnableThreeJs.js';
 
@@ -26,14 +26,16 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
   private _graphModel: GraphModel;
   private graphControl: GraphControl;
   domEvents: THREEx.DomEvents;
+  private font: THREE.Font;
 
-  constructor(scene: THREE.Scene, defaultObjectSize: number, rotationSpeedX: number, rotationSpeedY: number, graphModel?: GraphModel) {
+  constructor(scene: THREE.Scene, defaultObjectSize: number, rotationSpeedX: number, rotationSpeedY: number, font?: Font, graphModel?: GraphModel) {
     this._scene = scene;
     this._defaultObjectSize = defaultObjectSize;
     this.rotationSpeedX = rotationSpeedX;
     this.rotationSpeedY = rotationSpeedY;
     this._graphModel = graphModel;
     this.graphControl = new GraphControl(this.graphModel);
+    this.font = font;
   }
 
   addEventListener(vertex: Vertex, type: string, listener: (event: Event) => void, withBoundingBox?: boolean): void {
@@ -123,7 +125,7 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
       }
     }
     else {
-      renderedVertex = this.vertexRenderer.createVertexRenderingMixin(vertex, position);
+      renderedVertex = this.vertexRenderer.createVertexRenderingMixin(vertex, this.font, position);
     }
     var vid = vertex.vid;
     if (!this._graphModel.vertexes[vid]) {
@@ -204,11 +206,16 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
         (<THREE.Object3D> vertexes[id]).rotation.y += this.rotationSpeedY;
       }
     }
+    /*for (var i = 0; i < this.textlabels.length; i++) {
+      this.textlabels[i].updatePosition();
+    }*/
+
   }
 
   setupDomEvents(camera: Camera, domElement?: HTMLElement) {
     this.domEvents = new THREEx.THREEx.DomEvents(camera, domElement);
   }
+
 }
 
 export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
@@ -223,7 +230,7 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     this.defaultObjectSize = defaultObjectSize ? defaultObjectSize : 20;
   }
 
-  createVertexRenderingMixin(vertex: Vertex, position?: THREE.Vector3): Vertex & THREE.Object3D {
+  createVertexRenderingMixin(vertex: Vertex, font?: Font, position ?: THREE.Vector3): Vertex & THREE.Object3D {
     let mesh;
     switch (vertex.vtype) {
       case 'PERSON':
@@ -238,7 +245,43 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
       default:
         mesh = this.createCube(this._textures[2], this.defaultObjectSize, position);
     }
+    this.addLabel(mesh, vertex.vname);
+    /*
+    if (font) {
+      mesh.add(this.createVertexInfoObject(vertex, font));
+    }*/
     return extend(mesh, vertex);
+  }
+
+  addLabel(obj: THREE.Object3D, text: string) {
+    var canvas1 = document.createElement('canvas');
+    var context1 = canvas1.getContext('2d');
+    context1.font = "Bold 10px Arial";
+    context1.fillStyle = "rgba(255,0,0,1)";
+    context1.fillText(text, 0, 60);
+
+    // canvas contents will be used for a texture
+    var texture1 = new THREE.Texture(canvas1)
+    texture1.needsUpdate = true;
+
+    var material1 = new THREE.MeshBasicMaterial({map: texture1, side: THREE.DoubleSide});
+    material1.transparent = true;
+
+    var mesh1 = new THREE.Mesh(
+      new THREE.PlaneGeometry(50, 10),
+      material1
+    );
+    mesh1.position.set(25, 5, -5);
+    mesh1.rotation.x = -0.9;
+    obj.add(mesh1);
+
+  }
+  private createVertexInfoObject(vertex: Vertex & THREE.Object3D, font: Font): THREE.Object3D {
+    return this.createTextCube(vertex.vname,
+      {
+        font: font,
+        size: this.defaultObjectSize / vertex.vname.length / 20
+      });
   }
 
   createEdgeRenderingMixin(edge: Edge, fromVertex3D: THREE.Object3D, toVertex3D: THREE.Object3D): Edge & THREE.Object3D {
@@ -250,7 +293,7 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
 
   }
 
-  private createCube(texturePath: string, geometrySize: number, position?: THREE.Vector3) {
+  private createCube(texturePath: string, geometrySize: number, position ?: THREE.Vector3) {
     const texture = new THREE.TextureLoader().load(texturePath);
     const material = new THREE.MeshBasicMaterial({map: texture});
 
@@ -264,7 +307,20 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     return newCube;
   }
 
-  createSmileyShapeMesh(color, size: number, position?: THREE.Vector3): THREE.Mesh {
+  private createTextCube(text: string, textGeometryParameters: THREE.TextGeometryParameters, position ?: THREE.Vector3) {
+    const material = new THREE.MeshBasicMaterial();
+
+    const geometry = new THREE.TextGeometry(text, textGeometryParameters);
+
+    const newCube = new THREE.Mesh(geometry, material);
+    if (position) {
+      newCube.position.set(position.x, position.y, position.z);
+    }
+
+    return newCube;
+  }
+
+  createSmileyShapeMesh(color, size: number, position ?: THREE.Vector3): THREE.Mesh {
     const smileyShape = new THREE.Shape();
     smileyShape.moveTo(80, 40);
     smileyShape.absarc(40, 40, 40, 0, Math.PI * 2, false);
@@ -318,5 +374,68 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     mesh.scale.set(s, s, s);
     return mesh;
   }
+
+/*  addHtmlTextLabel(obj: THREE.Obbject3D, text: string) {
+    var label = this.createTextLabel();
+    label.setHTML(text);
+    label.setParent(obj);
+    this.textlabels.push(text);
+    this.container.appendChild(text.element);
+  }
+
+
+  createTextLabel() {
+    var div = document.createElement('div');
+    div.className = 'text-label';
+    div.style.position = 'absolute';
+    div.style.width = 100;
+    div.style.height = 100;
+    div.innerHTML = "hi there!";
+    div.style.top = -1000;
+    div.style.left = -1000;
+
+  }
+
+  updatePosition() {
+    if (parent) {
+      this.position.copy(this.parent.position);
+    }
+
+    var coords2d = this.get2DCoords(this.position, this.camera);
+    this.element.style.left = coords2d.x + 'px';
+    this.element.style.top = coords2d.y + 'px';
+  }
+
+
+  return {
+    element: div,
+    parent: false,
+    position: new THREE.Vector3(0, 0, 0),
+    setHTML: function (html) {
+      this.element.innerHTML = html;
+    },
+    setParent: function (threejsobj) {
+      this.parent = threejsobj;
+    },
+    updatePosition: function () {
+      if (parent) {
+        this.position.copy(this.parent.position);
+      }
+
+      var coords2d = this.get2DCoords(this.position, _this.camera);
+      this.element.style.left = coords2d.x + 'px';
+      this.element.style.top = coords2d.y + 'px';
+    },
+    get2DCoords: function (position, camera) {
+      var vector = position.project(camera);
+      vector.x = (vector.x + 1) / 2 * window.innerWidth;
+      vector.y = -(vector.y - 1) / 2 * window.innerHeight;
+      return vector;
+    }
+  };
+}
+}
+;*/
+
 }
 
