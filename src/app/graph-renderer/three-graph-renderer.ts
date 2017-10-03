@@ -28,14 +28,70 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
   domEvents: THREEx.DomEvents;
   private font: THREE.Font;
 
-  constructor(scene: THREE.Scene, defaultObjectSize: number, rotationSpeedX: number, rotationSpeedY: number, font?: Font, graphModel?: GraphModel) {
-    this._scene = scene;
+
+  private renderer: THREE.WebGLRenderer;
+  private camera: THREE.PerspectiveCamera;
+  private clientWidth: number;
+  private clientHeight: number;
+
+  constructor(defaultObjectSize: number, rotationSpeedX: number, rotationSpeedY: number, font?: Font, graphModel?: GraphModel) {
     this._defaultObjectSize = defaultObjectSize;
     this.rotationSpeedX = rotationSpeedX;
     this.rotationSpeedY = rotationSpeedY;
     this._graphModel = graphModel;
     this.graphControl = new GraphControl(this.graphModel);
     this.font = font;
+  }
+
+  /**
+   * Create the scene
+   */
+  createScene(fieldOfView, clientWidth, clientHeight, nearClippingPane, farClippingPane, cameraZ) {
+    /* Scene */
+    this.scene = new THREE.Scene();
+    this.scene.fog = new THREE.FogExp2(0xcce0ff, 0.0003);
+    this.clientWidth = clientWidth;
+    this.clientHeight = clientHeight
+
+    /* Camera */
+    this.camera = new THREE.PerspectiveCamera(
+      fieldOfView,
+      this.getAspectRatio(),
+      nearClippingPane,
+      farClippingPane
+    );
+    this.camera.position.z = cameraZ;
+
+    //this.createOrbitControls();
+    // Add lights
+    this.scene.add(new THREE.AmbientLight(0x444444));
+    const dirLight = new THREE.DirectionalLight(0xffffff);
+    dirLight.position.set(200, 200, 1000).normalize();
+
+    const light = new THREE.SpotLight(0xffffff, 1.5);
+    light.position.set(0, 500, 2000);
+    light.castShadow = true;
+    light.shadow = new THREE.SpotLightShadow(new THREE.PerspectiveCamera(50, 1, 200, 10000));
+    light.shadow.bias = -0.00022;
+    light.shadow.mapSize.width = 2048;
+    light.shadow.mapSize.height = 2048;
+
+
+    this.scene.add(light);
+    this.camera.add(dirLight);
+    this.camera.add(dirLight.target);
+  }
+
+  /**
+   * Start the rendering loop
+   */
+  startRenderingLoop() {
+    const component: CircleAutoGraphRenderer = this;
+    (function render() {
+      requestAnimationFrame(render);
+      component.animateObjects();
+      component.renderer.render(component.scene, component.camera);
+    }());
   }
 
   addEventListener(vertex: Vertex, type: string, listener: (event: Event) => void, withBoundingBox?: boolean): void {
@@ -133,6 +189,7 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
       this.graphControl.addVertexControls(renderedVertex);
       this.scene.add(renderedVertex);
     }
+
     return renderedVertex;
   }
 
@@ -144,10 +201,9 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     var clonedVertex = new Vertex(newId, "Clone " + cloneIndex + " of " + vertex.vname, vertex.vtype);
     var clonedRenderedVertex = extend((<THREE.Object3D> vertex).clone(), clonedVertex);
     this.addRenderedVertexToGraph(clonedRenderedVertex);
-
+    this.graphControl.updateDragControls(this.camera, this.renderer.domElement);
     return clonedRenderedVertex
   }
-
 
   generateCloneId(vid: string): string {
     // Use -c seperator to split original id from clone index (if id is not id of a clone then the resulting array will have length 1)
@@ -216,6 +272,39 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     this.domEvents = new THREEx.THREEx.DomEvents(camera, domElement);
   }
 
+  createControls() {
+    this.graphControl.createDragControls(this.camera, this.renderer.domElement);
+    this.graphControl.createOrbitControls(this.camera);
+  }
+
+  /**
+   * Update scene after resizing.
+   */
+  public setSceneSize(clientWidth: number, clientHeight: number) {
+    this.clientWidth = clientWidth;
+    this.clientHeight = clientHeight;
+    this.camera.aspect = this.getAspectRatio();
+    this.camera.updateProjectionMatrix();
+
+    this.renderer.setSize(clientWidth, clientHeight);
+  }
+
+  private getAspectRatio() {
+    return this.clientWidth / this.clientHeight;
+  }
+
+  public createWebGLRenderer(canvas: HTMLCanvasElement) {
+    /* Renderer */
+    // Use canvas element in template
+    this.renderer = new THREE.WebGLRenderer({canvas: canvas});
+    this.renderer.setPixelRatio(devicePixelRatio);
+    this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+    this.renderer.setClearColor(this.scene.fog.color);
+    this.setupDomEvents(this.camera, this.renderer.domElement);
+
+    console.log('renderer width=" + this.renderer.getSize().width + ", height=' + this.renderer.getSize().height);
+  }
 }
 
 export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
@@ -245,11 +334,11 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
       default:
         mesh = this.createCube(this._textures[2], this.defaultObjectSize, position);
     }
-    this.addLabel(mesh, vertex.vname);
-    /*
+    //this.addLabel(mesh, vertex.vname);
+
     if (font) {
       mesh.add(this.createVertexInfoObject(vertex, font));
-    }*/
+    }
     return extend(mesh, vertex);
   }
 
@@ -276,6 +365,7 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     obj.add(mesh1);
 
   }
+
   private createVertexInfoObject(vertex: Vertex & THREE.Object3D, font: Font): THREE.Object3D {
     return this.createTextCube(vertex.vname,
       {
@@ -374,68 +464,5 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     mesh.scale.set(s, s, s);
     return mesh;
   }
-
-/*  addHtmlTextLabel(obj: THREE.Obbject3D, text: string) {
-    var label = this.createTextLabel();
-    label.setHTML(text);
-    label.setParent(obj);
-    this.textlabels.push(text);
-    this.container.appendChild(text.element);
-  }
-
-
-  createTextLabel() {
-    var div = document.createElement('div');
-    div.className = 'text-label';
-    div.style.position = 'absolute';
-    div.style.width = 100;
-    div.style.height = 100;
-    div.innerHTML = "hi there!";
-    div.style.top = -1000;
-    div.style.left = -1000;
-
-  }
-
-  updatePosition() {
-    if (parent) {
-      this.position.copy(this.parent.position);
-    }
-
-    var coords2d = this.get2DCoords(this.position, this.camera);
-    this.element.style.left = coords2d.x + 'px';
-    this.element.style.top = coords2d.y + 'px';
-  }
-
-
-  return {
-    element: div,
-    parent: false,
-    position: new THREE.Vector3(0, 0, 0),
-    setHTML: function (html) {
-      this.element.innerHTML = html;
-    },
-    setParent: function (threejsobj) {
-      this.parent = threejsobj;
-    },
-    updatePosition: function () {
-      if (parent) {
-        this.position.copy(this.parent.position);
-      }
-
-      var coords2d = this.get2DCoords(this.position, _this.camera);
-      this.element.style.left = coords2d.x + 'px';
-      this.element.style.top = coords2d.y + 'px';
-    },
-    get2DCoords: function (position, camera) {
-      var vector = position.project(camera);
-      vector.x = (vector.x + 1) / 2 * window.innerWidth;
-      vector.y = -(vector.y - 1) / 2 * window.innerHeight;
-      return vector;
-    }
-  };
-}
-}
-;*/
-
 }
 
