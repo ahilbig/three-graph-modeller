@@ -26,7 +26,7 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
   private _graphModel: GraphModel;
   private graphControl: GraphControl;
   domEvents: THREEx.DomEvents;
-  private font: THREE.Font;
+  private _font: THREE.Font;
 
 
   private renderer: THREE.WebGLRenderer;
@@ -41,6 +41,12 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     this._graphModel = graphModel;
     this.graphControl = new GraphControl(this.graphModel);
     this.font = font;
+  }
+
+
+  set font(value: THREE.Font) {
+    this._font = value;
+    this.vertexRenderer.font = value;
   }
 
   /**
@@ -181,7 +187,7 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
       }
     }
     else {
-      renderedVertex = this.vertexRenderer.createVertexRenderingMixin(vertex, this.font, position);
+      renderedVertex = this.vertexRenderer.createVertexRenderingMixin(vertex, this._font, position);
     }
     var vid = vertex.vid;
     if (!this._graphModel.vertexes[vid]) {
@@ -196,10 +202,16 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
   cloneRenderedVertex(vertex: Vertex): Vertex {
     var oldId = vertex.vid;
     var newId = this.generateCloneId(oldId);
-    var cloneIndex = newId.split("-c")[1];
+    const cloneIndex = parseInt(newId.split("-c")[1]);
+    var nameCore = cloneIndex > 1 ? vertex.vname.split("Clone " + (cloneIndex-1) + " of ")[1] : vertex.vname;
+
+
     console.log("Cloning vertex with id=" + oldId + ", cloned id=" + newId);
-    var clonedVertex = new Vertex(newId, "Clone " + cloneIndex + " of " + vertex.vname, vertex.vtype);
-    var clonedRenderedVertex = extend((<THREE.Object3D> vertex).clone(), clonedVertex);
+    var clonedVertex = new Vertex(newId, "Clone " + cloneIndex + " of " + (nameCore? nameCore: vertex.vname), vertex.vtype);
+    var clonedRenderedVertex: THREE.Object3D = extend((<THREE.Object3D> vertex).clone(), clonedVertex);
+
+    this.vertexRenderer.setVertexInfoName(clonedRenderedVertex)
+
     this.addRenderedVertexToGraph(clonedRenderedVertex);
     this.graphControl.updateDragControls(this.camera, this.renderer.domElement);
     return clonedRenderedVertex
@@ -313,10 +325,11 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
 
   extrudeSettings = {amount: 8, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1};
   private defaultObjectSize;
+  font: THREE.Font;
 
-
-  constructor(defaultObjectSize?: number) {
+  constructor(defaultObjectSize?: number, font?: THREE.Font) {
     this.defaultObjectSize = defaultObjectSize ? defaultObjectSize : 20;
+    this.font = font;
   }
 
   createVertexRenderingMixin(vertex: Vertex, font?: Font, position ?: THREE.Vector3): Vertex & THREE.Object3D {
@@ -336,12 +349,14 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     }
     //this.addLabel(mesh, vertex.vname);
 
+    var ret = extend(mesh, vertex);
     if (font) {
-      mesh.add(this.createVertexInfoObject(vertex, font));
+      this.setVertexInfoName( ret );
     }
-    return extend(mesh, vertex);
+    return ret;
   }
 
+  /* TODO : Repair / currently not used and not working */
   addLabel(obj: THREE.Object3D, text: string) {
     var canvas1 = document.createElement('canvas');
     var context1 = canvas1.getContext('2d');
@@ -365,13 +380,30 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     obj.add(mesh1);
 
   }
+  setVertexInfoName(vertex: Vertex & THREE.Object3D): THREE.Object3D {
+    return this.setVertexInfo(vertex, "vertexName", vertex.vname);
+  }
 
-  private createVertexInfoObject(vertex: Vertex & THREE.Object3D, font: Font): THREE.Object3D {
-    return this.createTextCube(vertex.vname,
-      {
-        font: font,
-        size: this.defaultObjectSize / vertex.vname.length / 20
-      });
+  private setVertexInfo(vertex: Vertex & THREE.Object3D, name: string, text: string): THREE.Object3D {
+    const charSize = 7;
+    const charHeight = 3;
+    const width = charSize * vertex.vname.length;
+    var existingInfo = vertex.getObjectByName(name);
+    if (existingInfo) {
+      vertex.remove(existingInfo);
+    }
+    var newInfo = this.createTextCube(vertex.vname,
+    {
+      font: this.font,
+      height: charHeight,
+      size: charSize
+    }, {
+      x: -width / 2,
+      y: -this.defaultObjectSize * charHeight / 2,
+      z: 0
+    }, name);
+    vertex.add(newInfo);
+    return newInfo;
   }
 
   createEdgeRenderingMixin(edge: Edge, fromVertex3D: THREE.Object3D, toVertex3D: THREE.Object3D): Edge & THREE.Object3D {
@@ -391,20 +423,23 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
 
     const newCube = new THREE.Mesh(geometry, material);
     if (position) {
-      newCube.position.set(position.x, position.y, position.z);
+      newCube.position.copy(position);
     }
 
     return newCube;
   }
 
-  private createTextCube(text: string, textGeometryParameters: THREE.TextGeometryParameters, position ?: THREE.Vector3) {
+  private createTextCube(text: string, textGeometryParameters: THREE.TextGeometryParameters, position ?: THREE.Vector3, name?: string) {
     const material = new THREE.MeshBasicMaterial();
 
     const geometry = new THREE.TextGeometry(text, textGeometryParameters);
 
     const newCube = new THREE.Mesh(geometry, material);
     if (position) {
-      newCube.position.set(position.x, position.y, position.z);
+      newCube.position.copy(position);
+    }
+    if (name) {
+      newCube.name = name;
     }
 
     return newCube;
