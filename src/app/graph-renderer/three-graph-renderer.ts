@@ -203,11 +203,11 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     var oldId = vertex.vid;
     var newId = this.generateCloneId(oldId);
     const cloneIndex = parseInt(newId.split("-c")[1]);
-    var nameCore = cloneIndex > 1 ? vertex.vname.split("Clone " + (cloneIndex-1) + " of ")[1] : vertex.vname;
+    var nameCore = cloneIndex > 1 ? vertex.vname.split("Clone " + (cloneIndex - 1) + " of ")[1] : vertex.vname;
 
 
     console.log("Cloning vertex with id=" + oldId + ", cloned id=" + newId);
-    var clonedVertex = new Vertex(newId, "Clone " + cloneIndex + " of " + (nameCore? nameCore: vertex.vname), vertex.vtype);
+    var clonedVertex = new Vertex(newId, "Clone " + cloneIndex + " of " + (nameCore ? nameCore : vertex.vname), vertex.vtype);
     var clonedRenderedVertex: THREE.Object3D = extend((<THREE.Object3D> vertex).clone(), clonedVertex);
 
     this.vertexRenderer.setVertexInfoName(clonedRenderedVertex)
@@ -347,63 +347,98 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
       default:
         mesh = this.createCube(this._textures[2], this.defaultObjectSize, position);
     }
-    //this.addLabel(mesh, vertex.vname);
+    mesh.geometry.center();
 
     var ret = extend(mesh, vertex);
     if (font) {
-      this.setVertexInfoName( ret );
+      this.setVertexInfoName(ret);
+      this.addLabel(ret, "This is an additional information added as child mesh by using a canvas content for creating a texture.");
     }
     return ret;
   }
 
   /* TODO : Repair / currently not used and not working */
   addLabel(obj: THREE.Object3D, text: string) {
+    var borderX = 30;
+    var borderY = 30;
+    var lineHeight = 25;
+
     var canvas1 = document.createElement('canvas');
+
     var context1 = canvas1.getContext('2d');
-    context1.font = "Bold 10px Arial";
-    context1.fillStyle = "rgba(255,0,0,1)";
-    context1.fillText(text, 0, 60);
+    context1.font = "20px Arial";
+    context1.fillStyle = "rgba(0,0,255,1)";
+
+    var maxWidth = canvas1.width - 2 * borderX;
+    var scaleCanvas2Object = this.defaultObjectSize / canvas1.width * 3;
+    var textHeight = this.wrapText(context1, text, borderX, borderY, maxWidth, lineHeight);
 
     // canvas contents will be used for a texture
-    var texture1 = new THREE.Texture(canvas1)
+    var texture1 = new THREE.Texture(canvas1);
     texture1.needsUpdate = true;
 
     var material1 = new THREE.MeshBasicMaterial({map: texture1, side: THREE.DoubleSide});
     material1.transparent = true;
 
     var mesh1 = new THREE.Mesh(
-      new THREE.PlaneGeometry(50, 10),
+      new THREE.PlaneGeometry(canvas1.width * scaleCanvas2Object, canvas1.height * scaleCanvas2Object),
       material1
     );
-    mesh1.position.set(25, 5, -5);
-    mesh1.rotation.x = -0.9;
+    mesh1.geometry.center();
+    mesh1.position.set(0, -this.defaultObjectSize * 2, this.defaultObjectSize * 1.05);
+    mesh1.rotation.x = 0;
     obj.add(mesh1);
-
   }
+
+  wrapText(context, text, x, y, maxWidth, lineHeight): number {
+    var words = text.split(' ');
+    var line = '';
+
+    for (var n = 0; n < words.length; n++) {
+      var testLine = line + words[n] + ' ';
+      var metrics = context.measureText(testLine);
+      var testWidth = metrics.width;
+      if (testWidth > maxWidth && n > 0) {
+        context.fillText(line, x, y);
+        line = words[n] + ' ';
+        y += lineHeight;
+      }
+      else {
+        line = testLine;
+      }
+    }
+    context.fillText(line, x, y);
+    return y + lineHeight;
+  }
+
   setVertexInfoName(vertex: Vertex & THREE.Object3D): THREE.Object3D {
     return this.setVertexInfo(vertex, "vertexName", vertex.vname);
   }
 
   private setVertexInfo(vertex: Vertex & THREE.Object3D, name: string, text: string): THREE.Object3D {
     const charSize = 7;
-    const charHeight = 3;
-    const width = charSize * vertex.vname.length;
+    const charHeight = 1;
+    const width = charSize * vertex.vname.length * 0.9;
     var existingInfo = vertex.getObjectByName(name);
     if (existingInfo) {
       vertex.remove(existingInfo);
     }
-    var newInfo = this.createTextCube(vertex.vname,
-    {
-      font: this.font,
-      height: charHeight,
-      size: charSize
-    }, {
-      x: -width / 2,
-      y: -this.defaultObjectSize * charHeight / 2,
-      z: 0
-    }, name);
+    var newInfo: THREE.Object3D = this.createTextCube(vertex.vname,
+      {
+        font: this.font,
+        height: charHeight,
+        size: charSize
+      }, name);
+
+    var scaleY = vertex.scale.y;
+    newInfo.position.setY(-scaleY*(this.defaultObjectSize / 2 + 1.5*charSize));
     vertex.add(newInfo);
     return newInfo;
+  }
+
+  calcBoundingSphereRadius(obj: THREE.Object3D) {
+    var boundingBoxHelper = new THREE.BoxHelper(obj);
+    return boundingBoxHelper.geometry.boundingSphere.radius;
   }
 
   createEdgeRenderingMixin(edge: Edge, fromVertex3D: THREE.Object3D, toVertex3D: THREE.Object3D): Edge & THREE.Object3D {
@@ -419,7 +454,7 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     const texture = new THREE.TextureLoader().load(texturePath);
     const material = new THREE.MeshBasicMaterial({map: texture});
 
-    const geometry = new THREE.BoxBufferGeometry(geometrySize, geometrySize, geometrySize);
+    const geometry = new THREE.BoxGeometry(geometrySize, geometrySize, geometrySize);
 
     const newCube = new THREE.Mesh(geometry, material);
     if (position) {
@@ -429,10 +464,11 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     return newCube;
   }
 
-  private createTextCube(text: string, textGeometryParameters: THREE.TextGeometryParameters, position ?: THREE.Vector3, name?: string) {
+  private createTextCube(text: string, textGeometryParameters: THREE.TextGeometryParameters, name?: string, position ?: THREE.Vector3): THREE.Object3D {
     const material = new THREE.MeshBasicMaterial();
 
     const geometry = new THREE.TextGeometry(text, textGeometryParameters);
+    geometry.center()
 
     const newCube = new THREE.Mesh(geometry, material);
     if (position) {
