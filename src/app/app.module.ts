@@ -7,13 +7,15 @@ import { AppComponent } from './app.component';
 import { GraphModelComponent } from './graph-model/graph-model.component';
 import { GraphRendererComponent } from './graph-renderer/graph-renderer.component';
 import { GraphControlComponentComponent } from './graph-control-component/graph-control-component.component';
+import { ThreeFormsComponent } from './three-forms/three-forms.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     GraphModelComponent,
     GraphRendererComponent,
-    GraphControlComponentComponent
+    GraphControlComponentComponent,
+    ThreeFormsComponent
   ],
   imports: [
     BrowserModule,

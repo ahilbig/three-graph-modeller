@@ -1,4 +1,5 @@
-import {RenderingInfo} from '../graph-renderer/graph-renderer.api';
+import {extend, RenderedObject} from "../graph-renderer/rendered-object";
+import {CanvasTextField} from "../three-forms/three-text-field";
 
 export class Vertex {
   vid: string;
@@ -9,24 +10,13 @@ export class Vertex {
     this.vid = id;
     this.vname = name;
     this.vtype = type;
+    // Could be inherited but in that case cloning a mixIn will be difficult as next to _prototype an additional constructor will be built
+    extend(this, new RenderedObject());
     console.log('Vertex constructed, vid=' + id + ', vname=' + name + ', vtype=' + type);
   }
-}
 
-export function extend<T, U>(first: T, second: U): T & U {
-  let result = <T & U> first;
-  /*
-  let result = <T & U>{};
-  for (let id in first) {
-    (<any>result)[id] = (<any>first)[id];
+  addLabel(defaultObjectSize: number, text: string) {
+    CanvasTextField.attach(this, defaultObjectSize, text);
   }
-  */
-  for (let id in second) {
-    if (!result.hasOwnProperty(id)) {
-      (<any>result)[id] = (<any>second)[id];
-    }
-  }
-  return result;
 }
-
 

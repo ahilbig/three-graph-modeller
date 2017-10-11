@@ -1,21 +1,21 @@
 ///<reference path="graph-renderer.component.ts"/>
 import * as THREE from 'three';
-import * as THREEx from 'threex.domevents';
 
 import {GraphModel} from '../graph-model/graph-model';
-import {AutoGraphRenderer, VertexRenderer} from './graph-renderer.api';
-import {extend, Vertex} from '../graph-model/vertex';
+import {AutoGraphLayouter, VertexRenderer} from './graph-renderer.api';
+import {Vertex} from '../graph-model/vertex';
 import {Edge} from '../graph-model/edge';
 import {GraphControl} from "../graph-control-component/graph-control";
-import {Camera, Font, TextGeometryParameters} from "../../../types/three/three-core";
+import {Font} from "../../../types/three/three-core";
 
 import '../js/EnableThreeJs.js';
+import {extend, RenderedEdge, RenderedVertex, RenderObjectController} from "./rendered-object";
 
 /**
  * Created by Andreas Hilbig on 11.09.2017.
  */
 
-export class CircleAutoGraphRenderer implements AutoGraphRenderer {
+export class CircleAutoGraphRenderer implements AutoGraphLayouter {
 
   private vertexRenderer: ThreeAutoVertexFromTypeRenderer = new ThreeAutoVertexFromTypeRenderer();
 
@@ -25,7 +25,6 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
   private rotationSpeedY = 0;
   private _graphModel: GraphModel;
   private graphControl: GraphControl;
-  domEvents: THREEx.DomEvents;
   private _font: THREE.Font;
 
 
@@ -100,14 +99,6 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     }());
   }
 
-  addEventListener(vertex: Vertex, type: string, listener: (event: Event) => void, withBoundingBox?: boolean): void {
-    if (this.isObject3D(vertex)) {
-      this.domEvents.addEventListener(<THREE.Object3D> vertex, type, listener, withBoundingBox ? withBoundingBox : true);
-    } else {
-      throw new Error("Unable to register event - vertex is no 3D Object");
-    }
-  }
-
   get graphModel(): GraphModel {
     return this._graphModel;
   }
@@ -145,8 +136,8 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     // Render vertexes
     let i = 0;
     for (let id in this._graphModel.vertexes) {
-      const vertex = this._graphModel.vertexes[id];
-      if (this.isObject3D(vertex)) {
+      const vertex = <RenderedVertex> this._graphModel.vertexes[id];
+      if (vertex.isObject3D()) {
         x = r * Math.sin(alpha * i);
         y = r * Math.cos(alpha * i);
 
@@ -174,13 +165,13 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     this.autoLayout();
   }
 
-  autoLayoutAddedVertex(vertex: Vertex & THREE.Object3D) {
+  autoLayoutAddedVertex(vertex: RenderedVertex) {
     this.autoLayout();
   }
 
-  addRenderedVertexToGraph(vertex: Vertex, position ?: THREE.Vector3): Vertex & THREE.Object3D {
+  addRenderedVertexToGraph(vertex: Vertex | RenderedVertex, position ?: THREE.Vector3): RenderedVertex {
     var renderedVertex;
-    if (this.isObject3D(vertex)) {
+    if (vertex.isObject3D()) {
       renderedVertex = vertex;
       if (position) {
         this.setObject3DPosition(vertex, position);
@@ -199,7 +190,7 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     return renderedVertex;
   }
 
-  cloneRenderedVertex(vertex: Vertex): Vertex {
+  cloneRenderedVertex(vertex: RenderedVertex): Vertex {
     var oldId = vertex.vid;
     var newId = this.generateCloneId(oldId);
     const cloneIndex = parseInt(newId.split("-c")[1]);
@@ -228,22 +219,18 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     return this.graphModel.vertexes[candidateId] ? this.generateCloneId(candidateId) : candidateId;
   }
 
-  addRenderedEdgeToGraph(edge: Edge) {
-    if (this.isObject3D(edge)) {
+  addRenderedEdgeToGraph(edge: Edge | RenderedEdge) {
+    if (edge.isObject3D()) {
       return edge;
     }
     else {
-      const fromVertex3D: THREE.Object3D & Vertex = this._graphModel.getFromVertex(edge);
-      const toVertex3D: THREE.Object3D & Vertex = this._graphModel.getToVertex(edge);
+      const fromVertex3D: RenderedVertex = this._graphModel.getFromVertex(edge);
+      const toVertex3D: RenderedVertex = this._graphModel.getToVertex(edge);
       var renderedEdge = this.vertexRenderer.createEdgeRenderingMixin(edge, fromVertex3D, toVertex3D);
       this._graphModel.edges.push(renderedEdge);
       this.scene.add(renderedEdge);
       return renderedEdge;
     }
-  }
-
-  isObject3D(vertex: Vertex | THREE.Object3D): vertex is THREE.Object3D {
-    return (vertex instanceof THREE.Object3D);
   }
 
   private setObject3DPosition(obj: THREE.Object3D, position: THREE.Vector3) {
@@ -255,8 +242,8 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
   }
 
   autoLayoutEdge(edge: Edge, moveVertexes?: boolean) {
-    const fromVertex3D: THREE.Object3D & Vertex = this._graphModel.getFromVertex(edge);
-    const toVertex3D: THREE.Object3D & Vertex = this._graphModel.getToVertex(edge);
+    const fromVertex3D: RenderedVertex = this._graphModel.getFromVertex(edge);
+    const toVertex3D: RenderedVertex = this._graphModel.getToVertex(edge);
 
     if (fromVertex3D && toVertex3D) {
       this.vertexRenderer.updateLineGeometry(<THREE.Line> edge, fromVertex3D.position, toVertex3D.position);
@@ -279,11 +266,6 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     }*/
 
   }
-
-  setupDomEvents(camera: Camera, domElement?: HTMLElement) {
-    this.domEvents = new THREEx.THREEx.DomEvents(camera, domElement);
-  }
-
   createControls() {
     this.graphControl.createDragControls(this.camera, this.renderer.domElement);
     this.graphControl.createOrbitControls(this.camera);
@@ -313,7 +295,7 @@ export class CircleAutoGraphRenderer implements AutoGraphRenderer {
     this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
     this.renderer.setClearColor(this.scene.fog.color);
-    this.setupDomEvents(this.camera, this.renderer.domElement);
+    RenderObjectController.setupDomEvents(this.camera, this.renderer.domElement);
 
     console.log('renderer width=" + this.renderer.getSize().width + ", height=' + this.renderer.getSize().height);
   }
@@ -332,7 +314,7 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     this.font = font;
   }
 
-  createVertexRenderingMixin(vertex: Vertex, font?: Font, position ?: THREE.Vector3): Vertex & THREE.Object3D {
+  createVertexRenderingMixin(vertex: Vertex, font?: Font, position ?: THREE.Vector3): RenderedVertex {
     let mesh;
     switch (vertex.vtype) {
       case 'PERSON':
@@ -352,70 +334,17 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     var ret = extend(mesh, vertex);
     if (font) {
       this.setVertexInfoName(ret);
-      this.addLabel(ret, "This is an additional information added as child mesh by using a canvas content for creating a texture.");
+      ret.addLabel("This is an additional information added as child mesh by using a canvas content for creating a texture.");
     }
     return ret;
   }
 
-  /* TODO : Repair / currently not used and not working */
-  addLabel(obj: THREE.Object3D, text: string) {
-    var borderX = 30;
-    var borderY = 30;
-    var lineHeight = 25;
 
-    var canvas1 = document.createElement('canvas');
-
-    var context1 = canvas1.getContext('2d');
-    context1.font = "20px Arial";
-    context1.fillStyle = "rgba(0,0,255,1)";
-
-    var maxWidth = canvas1.width - 2 * borderX;
-    var scaleCanvas2Object = this.defaultObjectSize / canvas1.width * 3;
-    var textHeight = this.wrapText(context1, text, borderX, borderY, maxWidth, lineHeight);
-
-    // canvas contents will be used for a texture
-    var texture1 = new THREE.Texture(canvas1);
-    texture1.needsUpdate = true;
-
-    var material1 = new THREE.MeshBasicMaterial({map: texture1, side: THREE.DoubleSide});
-    material1.transparent = true;
-
-    var mesh1 = new THREE.Mesh(
-      new THREE.PlaneGeometry(canvas1.width * scaleCanvas2Object, canvas1.height * scaleCanvas2Object),
-      material1
-    );
-    mesh1.geometry.center();
-    mesh1.position.set(0, -this.defaultObjectSize * 2, this.defaultObjectSize * 1.05);
-    mesh1.rotation.x = 0;
-    obj.add(mesh1);
-  }
-
-  wrapText(context, text, x, y, maxWidth, lineHeight): number {
-    var words = text.split(' ');
-    var line = '';
-
-    for (var n = 0; n < words.length; n++) {
-      var testLine = line + words[n] + ' ';
-      var metrics = context.measureText(testLine);
-      var testWidth = metrics.width;
-      if (testWidth > maxWidth && n > 0) {
-        context.fillText(line, x, y);
-        line = words[n] + ' ';
-        y += lineHeight;
-      }
-      else {
-        line = testLine;
-      }
-    }
-    context.fillText(line, x, y);
-    return y + lineHeight;
-  }
-
-  setVertexInfoName(vertex: Vertex & THREE.Object3D): THREE.Object3D {
+  setVertexInfoName(vertex: RenderedVertex): THREE.Object3D {
     return this.setVertexInfo(vertex, "vertexName", vertex.vname);
   }
 
-  private setVertexInfo(vertex: Vertex & THREE.Object3D, name: string, text: string): THREE.Object3D {
+  private setVertexInfo(vertex: RenderedVertex, name: string, text: string): THREE.Object3D {
     const charSize = 7;
     const charHeight = 1;
     const width = charSize * vertex.vname.length * 0.9;
@@ -441,7 +370,7 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     return boundingBoxHelper.geometry.boundingSphere.radius;
   }
 
-  createEdgeRenderingMixin(edge: Edge, fromVertex3D: THREE.Object3D, toVertex3D: THREE.Object3D): Edge & THREE.Object3D {
+  createEdgeRenderingMixin(edge: Edge, fromVertex3D: THREE.Object3D, toVertex3D: THREE.Object3D): RenderedEdge {
     if (fromVertex3D && toVertex3D) {
       return extend(this.createLine(fromVertex3D.position, toVertex3D.position), edge);
     } else {

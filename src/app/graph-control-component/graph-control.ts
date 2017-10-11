@@ -1,6 +1,7 @@
 import {Vertex} from "../graph-model/vertex";
 import {GraphModel} from "../graph-model/graph-model";
 import * as THREE from 'three';
+import {RenderedVertex} from "../graph-renderer/rendered-object";
 
 export class GraphControl {
   graphModel: GraphModel;
@@ -11,8 +12,8 @@ export class GraphControl {
     this.graphModel = graphModel;
   }
 
-  addVertexControls(obj: THREE.Object3D & Vertex) {
-    this.graphModel.graphRenderer.addEventListener(obj,"dblclick", (event:Event) => {
+  addVertexControls(obj: RenderedVertex) {
+    obj.addEventListener("dblclick", (event:Event) => {
       this.graphModel.cloneVertex(obj.vid);
     })
   }
