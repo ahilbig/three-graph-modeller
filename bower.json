@@ -1,0 +1,28 @@
+{
+  "name": "three-graph-modeller",
+  "description": "",
+  "main": "",
+  "authors": [
+    "Andreas Hilbig <ahilbig@me.com>"
+  ],
+  "license": "Apache2.0",
+  "homepage": "https://github.com/ahilbig/three-graph-modeller",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "threex": "https://github.com/jeromeetienne/threex.domevents2"
+  },
+  "dependencies-gitignore": {
+    "threex": {
+      "ignore": [
+        "*"
+      ],
+      "unignore": []
+    }
+  }
+}

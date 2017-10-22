@@ -10,6 +10,7 @@ import {Font} from "../../../types/three/three-core";
 
 import '../js/EnableThreeJs.js';
 import {extend, RenderedEdge, RenderedVertex, RenderObjectController} from "./rendered-object";
+import {ThreeInputManager} from "../three-forms/three-input-manager";
 
 /**
  * Created by Andreas Hilbig on 11.09.2017.
@@ -17,7 +18,7 @@ import {extend, RenderedEdge, RenderedVertex, RenderObjectController} from "./re
 
 export class CircleAutoGraphRenderer implements AutoGraphLayouter {
 
-  private vertexRenderer: ThreeAutoVertexFromTypeRenderer = new ThreeAutoVertexFromTypeRenderer();
+  private _vertexRenderer: ThreeAutoVertexFromTypeRenderer = new ThreeAutoVertexFromTypeRenderer();
 
   private _scene: THREE.Scene;
   private _defaultObjectSize: number;
@@ -27,11 +28,13 @@ export class CircleAutoGraphRenderer implements AutoGraphLayouter {
   private graphControl: GraphControl;
   private _font: THREE.Font;
 
+  private _inputManager: ThreeInputManager;
 
   private renderer: THREE.WebGLRenderer;
   private camera: THREE.PerspectiveCamera;
   private clientWidth: number;
   private clientHeight: number;
+
 
   constructor(defaultObjectSize: number, rotationSpeedX: number, rotationSpeedY: number, font?: Font, graphModel?: GraphModel) {
     this._defaultObjectSize = defaultObjectSize;
@@ -40,12 +43,34 @@ export class CircleAutoGraphRenderer implements AutoGraphLayouter {
     this._graphModel = graphModel;
     this.graphControl = new GraphControl(this.graphModel);
     this.font = font;
+    this.inputManager = new ThreeInputManager(this);
   }
 
+  get inputManager(): ThreeInputManager {
+    return this._inputManager;
+  }
+
+  set inputManager(value: ThreeInputManager) {
+    this._inputManager = value;
+    if(this._vertexRenderer) {
+      this._vertexRenderer.inputManager = value;
+    }
+  }
+
+  get vertexRenderer(): ThreeAutoVertexFromTypeRenderer {
+    return this._vertexRenderer;
+  }
+
+  set vertexRenderer(value: ThreeAutoVertexFromTypeRenderer) {
+    this._vertexRenderer = value;
+    if(! value.inputManager ) {
+      value.inputManager = this.inputManager;
+    }
+  }
 
   set font(value: THREE.Font) {
     this._font = value;
-    this.vertexRenderer.font = value;
+    this._vertexRenderer.font = value;
   }
 
   /**
@@ -178,7 +203,7 @@ export class CircleAutoGraphRenderer implements AutoGraphLayouter {
       }
     }
     else {
-      renderedVertex = this.vertexRenderer.createVertexRenderingMixin(vertex, this._font, position);
+      renderedVertex = this._vertexRenderer.createVertexRenderingMixin(vertex, this._font, position);
     }
     var vid = vertex.vid;
     if (!this._graphModel.vertexes[vid]) {
@@ -201,7 +226,7 @@ export class CircleAutoGraphRenderer implements AutoGraphLayouter {
     var clonedVertex = new Vertex(newId, "Clone " + cloneIndex + " of " + (nameCore ? nameCore : vertex.vname), vertex.vtype);
     var clonedRenderedVertex: THREE.Object3D = extend((<THREE.Object3D> vertex).clone(), clonedVertex);
 
-    this.vertexRenderer.setVertexInfoName(clonedRenderedVertex)
+    this._vertexRenderer.setVertexInfoName(clonedRenderedVertex)
 
     this.addRenderedVertexToGraph(clonedRenderedVertex);
     this.graphControl.updateDragControls(this.camera, this.renderer.domElement);
@@ -226,7 +251,7 @@ export class CircleAutoGraphRenderer implements AutoGraphLayouter {
     else {
       const fromVertex3D: RenderedVertex = this._graphModel.getFromVertex(edge);
       const toVertex3D: RenderedVertex = this._graphModel.getToVertex(edge);
-      var renderedEdge = this.vertexRenderer.createEdgeRenderingMixin(edge, fromVertex3D, toVertex3D);
+      var renderedEdge = this._vertexRenderer.createEdgeRenderingMixin(edge, fromVertex3D, toVertex3D);
       this._graphModel.edges.push(renderedEdge);
       this.scene.add(renderedEdge);
       return renderedEdge;
@@ -246,7 +271,7 @@ export class CircleAutoGraphRenderer implements AutoGraphLayouter {
     const toVertex3D: RenderedVertex = this._graphModel.getToVertex(edge);
 
     if (fromVertex3D && toVertex3D) {
-      this.vertexRenderer.updateLineGeometry(<THREE.Line> edge, fromVertex3D.position, toVertex3D.position);
+      this._vertexRenderer.updateLineGeometry(<THREE.Line> edge, fromVertex3D.position, toVertex3D.position);
     } else {
       console.log("Unable to render edge from vertex " + this._graphModel.getFromVertex(edge).vid + " to vertex " + this._graphModel.getToVertex(edge).vid + ", missing renderingInfo.");
     }
@@ -302,16 +327,24 @@ export class CircleAutoGraphRenderer implements AutoGraphLayouter {
 }
 
 export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
-
   _textures = ['/assets/textures/vertex_POS_Box.gif', '/assets/textures/vertex_BILLING_Box.gif', '/assets/textures/crate.gif'];
 
   extrudeSettings = {amount: 8, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1};
   private defaultObjectSize;
   font: THREE.Font;
+  private _inputManager: ThreeInputManager;
 
   constructor(defaultObjectSize?: number, font?: THREE.Font) {
     this.defaultObjectSize = defaultObjectSize ? defaultObjectSize : 20;
     this.font = font;
+  }
+
+  get inputManager(): ThreeInputManager {
+    return this._inputManager;
+  }
+
+  set inputManager(value: ThreeInputManager) {
+    this._inputManager = value;
   }
 
   createVertexRenderingMixin(vertex: Vertex, font?: Font, position ?: THREE.Vector3): RenderedVertex {
@@ -334,7 +367,9 @@ export class ThreeAutoVertexFromTypeRenderer implements VertexRenderer {
     var ret = extend(mesh, vertex);
     if (font) {
       this.setVertexInfoName(ret);
-      ret.addLabel("This is an additional information added as child mesh by using a canvas content for creating a texture.");
+      this.inputManager.registerInputField(ret.addLabel(
+        this.defaultObjectSize,
+        "This is an additional information added as child mesh by using a canvas content for creating a texture."));
     }
     return ret;
   }

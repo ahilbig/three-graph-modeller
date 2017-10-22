@@ -5,8 +5,7 @@ import '../../assets/fonts/optimer_regular.typeface.json'
 
 import {CircleAutoGraphRenderer} from './three-graph-renderer';
 import * as THREE from 'three';
-//var aFont=require('three/examples/fonts/helvetiker_bold.typeface.json');
-//require('three/examples/fonts/helvetiker_bold.typeface.json');
+import {ThreeInputManager} from "../three-forms/three-input-manager";
 
 @Component({
   selector: 'app-graph-renderer',
@@ -14,7 +13,6 @@ import * as THREE from 'three';
   styleUrls: ['./graph-renderer.component.css']
 })
 export class GraphRendererComponent implements AfterViewInit {
-  /* HELPER PROPERTIES (PRIVATE PROPERTIES) */
   @Input()
   public rotationSpeedX = 0.005;
   @Input()
@@ -25,12 +23,12 @@ export class GraphRendererComponent implements AfterViewInit {
     return this.canvasRef.nativeElement;
   }
 
+  /* HELPER PROPERTIES (PRIVATE PROPERTIES) */
 
   @ViewChild('canvas')
   private canvasRef: ElementRef;
 
   private graphRenderer: CircleAutoGraphRenderer;
-
   /* STAGE PROPERTIES */
   @Input()
   public defaultObjectSize = 200;
@@ -59,19 +57,16 @@ export class GraphRendererComponent implements AfterViewInit {
   /* STAGING, ANIMATION, AND RENDERING */
 
   /* EVENTS */
+  @HostListener('document:keyup', ['$event'])
+  onKeyUp(ev: KeyboardEvent) {
+    this.graphRenderer.inputManager.onKeyUp(ev);
+  }
 
   /**
    * Update scene after resizing.
    */
   public onResize() {
     this.graphRenderer.setSceneSize(this.canvas.clientWidth, this.canvas.clientHeight);
-  }
-
-
-  @HostListener('document:keyup', ['$event'])
-  onKeyUp(ev: KeyboardEvent) {
-    // do something meaningful with it
-    console.log(`The user just pressed ${ev.key}!`);
   }
 
   loadFont(resourceURL: string, callback?: () => void): Promise<THREE.Font> {
@@ -127,11 +122,10 @@ export class GraphRendererComponent implements AfterViewInit {
 
     this.graphRenderer = new CircleAutoGraphRenderer(this.defaultObjectSize, this.rotationSpeedX, this.rotationSpeedY, this.font);
     this.graphRenderer.createScene(this.fieldOfView, this.canvas.clientWidth, this.canvas.clientHeight, this.nearClippingPane, this.farClippingPane, this.cameraZ);
+
     this.graphModel = new GraphModel(this.graphRenderer);
-
     this.graphRenderer.graphModel = this.graphModel;
-
-    this.graphRenderer.createWebGLRenderer(this.canvas);
+   this.graphRenderer.createWebGLRenderer(this.canvas);
 
     EnterpriseModelInitialDataLoader.initializeGraphModel(this.graphModel);
 

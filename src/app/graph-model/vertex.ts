@@ -1,5 +1,5 @@
 import {extend, RenderedObject} from "../graph-renderer/rendered-object";
-import {CanvasTextField} from "../three-forms/three-text-field";
+import {CanvasInputField, CanvasTextField} from "../three-forms/three-text-field";
 
 export class Vertex {
   vid: string;
@@ -15,8 +15,9 @@ export class Vertex {
     console.log('Vertex constructed, vid=' + id + ', vname=' + name + ', vtype=' + type);
   }
 
-  addLabel(defaultObjectSize: number, text: string) {
-    CanvasTextField.attach(this, defaultObjectSize, text);
+  addLabel(defaultObjectSize: number, text: string):CanvasInputField {
+    //CanvasTextField.attach(this, defaultObjectSize, text);
+    return CanvasInputField.attach(this, defaultObjectSize, text);
   }
 }
 
