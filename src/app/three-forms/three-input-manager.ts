@@ -21,24 +21,63 @@ export class ThreeInputManager {
   graphRenderer: CircleAutoGraphRenderer;
   inputFields: IDictionary<CanvasInputField> = {};
   private _activeInputField: CanvasInputField;
+  private _eventIgnored = false;
+  private _ignoredEent: KeyboardEvent;
+
 
   constructor(graphRenderer: CircleAutoGraphRenderer) {
     this.graphRenderer = graphRenderer;
+    this.initKeyBindings();
+  }
+
+  initKeyBindings() {
+    var comp = this;
+    Mousetrap.bind('backspace', function (ev: KeyboardEvent) {
+      comp.ignoreEvent(ev);
+      if (comp._activeInputField) {
+        comp._activeInputField.processBackspace();
+      }
+      console.log('backspace processed');
+    });
+    Mousetrap.bind('shift', function (ev: KeyboardEvent) {
+      comp.ignoreEvent(ev);
+      console.log('Mousetrap shift pressed');
+    });
   }
 
   @HostListener('document:keyup', ['$event'])
   onKeyUp(ev: KeyboardEvent) {
     // do something meaningful with it
     console.log(`The user just pressed the ${ev.key} key!`);
-    if (this._activeInputField) {
+    if (!this.isEventIgnoredOnce(ev) && this._activeInputField) {
       this._activeInputField.processKeyboardEvent(ev);
     }
+
+  }
+
+  ignoreEvent(ev: KeyboardEvent) {
+    this._eventIgnored = true;
+    this._ignoredEent = ev;
+  }
+
+  private isEventIgnoredOnce(ev: KeyboardEvent) {
+    if (this._eventIgnored && ev.key === this._ignoredEent.key) {
+      console.log(`Ignoring the ${ev.key} key, eventIgnored: ${this._eventIgnored}, ignoredEvent.key: ${this._ignoredEent.key}`);
+
+      this._eventIgnored = false;
+      this._ignoredEent = null;
+      return true;
+    } else {
+      console.log(`Not ignoring the ${ev.key} key, eventIgnored: ${this._eventIgnored}, ignoredEvent.key: ${this._ignoredEent ? this._ignoredEent.key : null}`);
+      return false;
+    }
+
   }
 
   registerInputField(inputField: CanvasInputField) {
     var comp = this;
     this.inputFields[inputField.id] = inputField;
-    inputField.addEventListener('click',(event:Event) => {
+    inputField.addEventListener('click', (event: Event) => {
       comp.activeInputField = inputField;
     });
 
@@ -51,7 +90,7 @@ export class ThreeInputManager {
 
   set activeInputField(inputField: CanvasInputField) {
     if (!inputField.active) {
-      if(this._activeInputField) {
+      if (this._activeInputField) {
         this._activeInputField.editable = false;
         this._activeInputField.active = false;
       }
@@ -60,4 +99,5 @@ export class ThreeInputManager {
       this._activeInputField.editable = true;
     }
   }
+
 }

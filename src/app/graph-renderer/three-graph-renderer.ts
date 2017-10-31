@@ -8,7 +8,7 @@ import {Edge} from '../graph-model/edge';
 import {GraphControl} from "../graph-control-component/graph-control";
 import {Font} from "../../../types/three/three-core";
 
-import '../js/EnableThreeJs.js';
+import '../js/EnableJsLibs.js';
 import {extend, RenderedEdge, RenderedVertex, RenderObjectController} from "./rendered-object";
 import {ThreeInputManager} from "../three-forms/three-input-manager";
 

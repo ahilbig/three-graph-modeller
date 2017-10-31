@@ -1,11 +1,10 @@
 import {AfterViewInit, Component, ElementRef, HostListener, Input, ViewChild} from '@angular/core';
 import {EnterpriseModelInitialDataLoader, GraphModel} from '../graph-model/graph-model';
-import '../js/EnableThreeJs';
+import '../js/EnableJsLibs';
 import '../../assets/fonts/optimer_regular.typeface.json'
 
 import {CircleAutoGraphRenderer} from './three-graph-renderer';
 import * as THREE from 'three';
-import {ThreeInputManager} from "../three-forms/three-input-manager";
 
 @Component({
   selector: 'app-graph-renderer',

@@ -16,6 +16,7 @@ import {RenderedObject} from "../graph-renderer/rendered-object";
 
 abstract class TextField extends RenderedObject {
   id: string;
+  private _object3dId;
   parentObject3D: THREE.Object3D;
   dirty: boolean;
   private _text: string;
@@ -25,6 +26,7 @@ abstract class TextField extends RenderedObject {
     this.parentObject3D = parentObject3D;
     this._text = text;
     this.dirty = (text != undefined);
+    this.id = id;
   }
 
   get text(): string {
@@ -43,12 +45,21 @@ abstract class TextField extends RenderedObject {
     this.draw(true);
   };
 
-  protected setIdFromObject(obj: THREE.Object3D) {
+
+  get object3dId() {
+    return this._object3dId;
+  }
+
+  set object3dId(value) {
+    this._object3dId = value;
     if (!this.id) {
-      this.id = obj.id;
+      this.id = value;
     }
   }
 
+  protected setObject3dId(obj: THREE.Object3D) {
+    this._object3dId = obj.id;
+  }
 }
 
 export class CanvasTextField extends TextField {
@@ -57,45 +68,59 @@ export class CanvasTextField extends TextField {
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D;
   private mesh: THREE.Object3D;
+  private fillStyle: string = "rgba(0,0,255,1)";
+  private font: string = "20px Arial";
 
   static attach(parentObject3D, defaultObjectSize: number, text: string) {
-    if(parentObject3D instanceof THREE.Object3D) {
+    if (parentObject3D instanceof THREE.Object3D) {
       return new CanvasTextField(parentObject3D, defaultObjectSize, text, true);
     } else {
       throw new Error("Unsupported Operation 'CanvasTextField.attach' for object " + parentObject3D.valueOf() + " of type " + parentObject3D.type);
     }
   }
 
-  constructor(parentObject: THREE.Object3D, defaultObjectSize: number, text?: string, drawNow?: boolean, fillStyle?:string, font?: string, id?: string) {
+  constructor(parentObject: THREE.Object3D, defaultObjectSize: number, text?: string, drawNow?: boolean, fillStyle?: string, font?: string, id?: string) {
     super(parentObject, text, id);
     this.defaultObjectSize = defaultObjectSize;
     this.dirty = true;
-    this.initCanvas(fillStyle, font);
+    this.setTextStyle(fillStyle, font);
     if (drawNow) {
       this.draw();
     }
   }
 
-  initCanvas(fillStyle?:string, font?: string) {
+  initCanvas() {
     this.canvas = document.createElement('canvas');
     this.context = this.canvas.getContext('2d');
-    this.setTextStyle(fillStyle, font);
+    this.updateTextStyle();
   }
 
-  setTextStyle(fillStyle?:string, font?: string) {
+  setTextStyle(fillStyle?: string, font?: string) {
+    if (font) {
+      this.font = font;
+    }
+    if (fillStyle) {
+      this.fillStyle = fillStyle;
+    }
+
+    this.updateTextStyle();
+  }
+
+  updateTextStyle() {
     // Only draw now if the text is assumed to be not dirty already because of other reasons..
     let drawNow = !this.dirty;
-    fillStyle = fillStyle? fillStyle: "rgba(0,0,255,1)";
-    font = font? font: "20px Arial";
-    if(font != this.context.font) {
-      this.context.font = font;
-      this.dirty = true;
+
+    if (this.context) {
+      if (this.font != this.context.font) {
+        this.context.font = this.font;
+        this.dirty = true;
+      }
+      if (this.fillStyle != this.context.fillStyle) {
+        this.context.fillStyle = this.fillStyle;
+        this.dirty = true;
+      }
     }
-    if(fillStyle != this.context.fillStyle) {
-      this.context.fillStyle = fillStyle;
-      this.dirty = true;
-    }
-    if(this.dirty && drawNow) {
+    if (this.dirty && drawNow) {
       this.draw(true);
     }
   }
@@ -103,6 +128,8 @@ export class CanvasTextField extends TextField {
   draw(dirty?: boolean) {
     if ((dirty || this.dirty) && this.text) {
       console.log("Redrawing text field");
+      this.initCanvas();
+
 
       var borderX = 30;
       var borderY = 30;
@@ -125,17 +152,17 @@ export class CanvasTextField extends TextField {
         material1
       );
 
-      this.setIdFromObject(this.mesh);
-
       this.mesh.geometry.center();
       this.mesh.position.set(0, -this.defaultObjectSize * 2, this.defaultObjectSize * 1.05);
       this.mesh.rotation.x = 0;
-      const child = this.parentObject3D.getObjectById(this.id);
+      const child = this.object3dId ? this.parentObject3D.getObjectById(this.object3dId) : null;
       if (child) {
         this.parentObject3D.remove(child);
       }
       this.parentObject3D.add(this.mesh);
-      this.dirty=false;
+      this.setObject3dId(this.mesh);
+
+      this.dirty = false;
     }
   }
 
@@ -163,6 +190,8 @@ export class CanvasTextField extends TextField {
   getObject3D(): THREE.Object3D {
     return this.mesh;
   }
+
+
 }
 
 export class CanvasInputField extends CanvasTextField {
@@ -173,16 +202,17 @@ export class CanvasInputField extends CanvasTextField {
   static fillStyleNotEditable = "rgba(0,255,255,1)";
 
   static getFillstyle(editable: boolean) {
-    return editable?
+    return editable ?
       CanvasInputField.fillStyleEditable : CanvasInputField.fillStyleNotEditable;
   }
 
-  constructor(parentObject: THREE.Object3D, defaultObjectSize: number, text?: string, draw?: boolean, editable?:boolean, id?: string) {
+  constructor(parentObject: THREE.Object3D, defaultObjectSize: number, text?: string, draw?: boolean, editable?: boolean, id?: string) {
     super(parentObject, defaultObjectSize, text, draw, CanvasInputField.getFillstyle(editable), id);
     this.editable = editable;
   }
-  static attach(parentObject3D, defaultObjectSize: number, text: string, editable?:boolean) {
-    if(parentObject3D instanceof THREE.Object3D) {
+
+  static attach(parentObject3D, defaultObjectSize: number, text: string, editable?: boolean) {
+    if (parentObject3D instanceof THREE.Object3D) {
       return new CanvasInputField(parentObject3D, defaultObjectSize, text, true, editable);
     } else {
       throw new Error("Unsupported Operation 'CanvasInputField.attach' for object " + parentObject3D.valueOf() + " of type " + parentObject3D.type);
@@ -195,7 +225,7 @@ export class CanvasInputField extends CanvasTextField {
   }
 
   set active(value: boolean) {
-    console.log ('Input field' + this.id + ' activated');
+    console.log('Input field' + this.id + ' activated');
     this._active = value;
   }
 
@@ -214,4 +244,9 @@ export class CanvasInputField extends CanvasTextField {
     }
   }
 
+  processBackspace() {
+    if (this.editable) {
+      this.drawText(this.text.substr(0, this.text.length - 1));
+    }
+  }
 }

@@ -8,5 +8,8 @@ require("three/examples/fonts/optimer_regular.typeface.json");
 THREEx=require('threex.domevents');
 require('threex.domevents/threex.domevents');
 
+MOUSETRAP=require('mousetrap');
+
+
 
 
