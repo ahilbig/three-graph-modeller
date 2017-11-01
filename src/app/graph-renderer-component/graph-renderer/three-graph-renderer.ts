@@ -1,4 +1,3 @@
-///<reference path="../graph-renderer.component.ts"/>
 import * as THREE from 'three';
 
 import {GraphModel} from '../graph-model/graph-model';
