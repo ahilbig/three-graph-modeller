@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import * as THREEx from 'threex.domevents';
 import {Vertex} from "../graph-model/vertex";
-import {Object3D} from "../../../types/three/three-core";
 
 export class RenderObjectController {
   static instance: RenderObjectController = new RenderObjectController();

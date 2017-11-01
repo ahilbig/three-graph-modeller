@@ -1,5 +1,5 @@
 import {extend, RenderedObject} from "../graph-renderer/rendered-object";
-import {CanvasInputField, CanvasTextField} from "../three-forms/three-text-field";
+import {CanvasInputField} from "../three-forms/three-text-field";
 
 export class Vertex {
   vid: string;

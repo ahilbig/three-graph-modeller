@@ -1,9 +1,9 @@
 import {AfterViewInit, Component, ElementRef, HostListener, Input, ViewChild} from '@angular/core';
-import {EnterpriseModelInitialDataLoader, GraphModel} from '../graph-model/graph-model';
+import {EnterpriseModelInitialDataLoader, GraphModel} from './graph-model/graph-model';
 import '../js/EnableJsLibs';
 import '../../assets/fonts/optimer_regular.typeface.json'
 
-import {CircleAutoGraphRenderer} from './three-graph-renderer';
+import {CircleAutoGraphRenderer} from './graph-renderer/three-graph-renderer';
 import * as THREE from 'three';
 
 @Component({
@@ -79,7 +79,7 @@ export class GraphRendererComponent implements AfterViewInit {
         // Function when resource is loaded
         function (font) {
           // do something with the font
-          component.font= font;
+          component.font = font;
           resolve(font)
         },
         // Function called when download progresses
@@ -124,7 +124,7 @@ export class GraphRendererComponent implements AfterViewInit {
 
     this.graphModel = new GraphModel(this.graphRenderer);
     this.graphRenderer.graphModel = this.graphModel;
-   this.graphRenderer.createWebGLRenderer(this.canvas);
+    this.graphRenderer.createWebGLRenderer(this.canvas);
 
     EnterpriseModelInitialDataLoader.initializeGraphModel(this.graphModel);
 

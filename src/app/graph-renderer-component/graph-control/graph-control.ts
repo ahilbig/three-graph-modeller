@@ -1,6 +1,5 @@
-import {Vertex} from "../graph-model/vertex";
-import {GraphModel} from "../graph-model/graph-model";
 import * as THREE from 'three';
+import {GraphModel} from "../graph-model/graph-model";
 import {RenderedVertex} from "../graph-renderer/rendered-object";
 
 export class GraphControl {

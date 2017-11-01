@@ -4,18 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
-import { GraphModelComponent } from './graph-model/graph-model.component';
-import { GraphRendererComponent } from './graph-renderer/graph-renderer.component';
-import { GraphControlComponentComponent } from './graph-control-component/graph-control-component.component';
-import { ThreeFormsComponent } from './three-forms/three-forms.component';
+import { GraphRendererComponent } from './graph-renderer-component/graph-renderer.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    GraphModelComponent,
     GraphRendererComponent,
-    GraphControlComponentComponent,
-    ThreeFormsComponent
   ],
   imports: [
     BrowserModule,

@@ -1,14 +1,14 @@
-///<reference path="graph-renderer.component.ts"/>
+///<reference path="../graph-renderer.component.ts"/>
 import * as THREE from 'three';
 
 import {GraphModel} from '../graph-model/graph-model';
 import {AutoGraphLayouter, VertexRenderer} from './graph-renderer.api';
 import {Vertex} from '../graph-model/vertex';
 import {Edge} from '../graph-model/edge';
-import {GraphControl} from "../graph-control-component/graph-control";
-import {Font} from "../../../types/three/three-core";
+import {GraphControl} from "../graph-control/graph-control";
+import {Font} from "../../../../types/three/three-core";
 
-import '../js/EnableJsLibs.js';
+import '../../js/EnableJsLibs.js';
 import {extend, RenderedEdge, RenderedVertex, RenderObjectController} from "./rendered-object";
 import {ThreeInputManager} from "../three-forms/three-input-manager";
 
