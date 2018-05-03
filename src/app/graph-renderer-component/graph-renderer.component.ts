@@ -1,10 +1,11 @@
 import {AfterViewInit, Component, ElementRef, HostListener, Input, ViewChild} from '@angular/core';
-import {EnterpriseModelInitialDataLoader, GraphModel} from './graph-model/graph-model';
-import '../js/EnableJsLibs';
+import {Graph} from './graph-model/graph';
+import '../shared/EnableJsLibs';
 import '../../assets/fonts/optimer_regular.typeface.json'
 
 import {CircleAutoGraphRenderer} from './graph-renderer/three-graph-renderer';
-import * as THREE from 'three';
+import * as THREE from "three";
+import {EnterpriseInitialDataLoader} from "./graph-data-initializer/enterprise-initial-data-loader";
 
 @Component({
   selector: 'app-graph-renderer',
@@ -16,7 +17,7 @@ export class GraphRendererComponent implements AfterViewInit {
   public rotationSpeedX = 0.005;
   @Input()
   public rotationSpeedY = 0.01;
-  private graphModel: GraphModel;
+  private graphModel: Graph;
 
   private get canvas(): HTMLCanvasElement {
     return this.canvasRef.nativeElement;
@@ -48,6 +49,9 @@ export class GraphRendererComponent implements AfterViewInit {
   private FONT_URL: string = '/assets/fonts/optimer_regular.typeface.json';
   private font: THREE.Font;
 
+  private modelsToLoad = 0
+  private modelsLoaded = 0
+
 
   /* DEPENDENCY INJECTION (CONSTRUCTOR) */
   constructor() {
@@ -72,7 +76,7 @@ export class GraphRendererComponent implements AfterViewInit {
     var loader = new THREE.FontLoader();
     var component = this;
 
-    var promise = new Promise((resolve, reject) => {
+    var promise = new Promise<THREE.Font>((resolve, reject) => {
       loader.load(
         // resource URL
         resourceURL,
@@ -97,6 +101,33 @@ export class GraphRendererComponent implements AfterViewInit {
 
   }
 
+  loadColladaModel(resourceURL: string, callback?: () => void): Promise<THREE.ColladaModel> {
+    var loader: THREE.ColladaLoader = new THREE.ColladaLoader()
+
+    var component = this;
+
+    var promise = new Promise<THREE.ColladaModel>((resolve, reject) => {
+      loader.load(
+        // resource URL
+        resourceURL,
+        // Function when resource is loaded
+        function (model) {
+          resolve(model)
+        },
+        // Function called when download progresses
+        function (xhr) {
+          console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        },
+        // Function called when download errors
+        function (xhr) {
+          console.log('An error happened while loading collada model');
+          reject();
+        }
+      )
+    });
+    return promise;
+
+  }
 
   /* LIFECYCLE */
 
@@ -110,7 +141,7 @@ export class GraphRendererComponent implements AfterViewInit {
     this.loadFont(this.FONT_URL).then(font => this.onFontLoaded(font));
   }
 
-  getDataFromFile(filename) {       //this will read file and send information to other function
+  public getDataFromFile(filename) {       //this will read file and send information to other function
     fetch(filename)
       .then(response => response.text())
       .then(text => console.log(text))
@@ -122,15 +153,28 @@ export class GraphRendererComponent implements AfterViewInit {
     this.graphRenderer = new CircleAutoGraphRenderer(this.defaultObjectSize, this.rotationSpeedX, this.rotationSpeedY, this.font);
     this.graphRenderer.createScene(this.fieldOfView, this.canvas.clientWidth, this.canvas.clientHeight, this.nearClippingPane, this.farClippingPane, this.cameraZ);
 
-    this.graphModel = new GraphModel(this.graphRenderer);
+    this.graphModel = new Graph(this.graphRenderer);
     this.graphRenderer.graphModel = this.graphModel;
     this.graphRenderer.createWebGLRenderer(this.canvas);
 
-    EnterpriseModelInitialDataLoader.initializeGraphModel(this.graphModel);
+    this.modelsToLoad = 4
+    this.loadColladaModel('/assets/models/camper1954airstream.dae').then(model => this.onModelLoaded("CAMPER", model));
+    this.loadColladaModel('/assets/models/bycicle(xedapsuonngang).dae').then(model => this.onModelLoaded("BIKE", model));
+    this.loadColladaModel('/assets/models/pickup/pickup.dae').then(model => this.onModelLoaded("PICKUP", model));
+    this.loadColladaModel('/assets/models/parking_villa/parking_villa.dae').then(model => this.onModelLoaded("PARKING_VILLA", model));
 
-    this.graphRenderer.autoLayout();
-    this.graphRenderer.createControls();
-    this.graphRenderer.startRenderingLoop();
+  }
+
+  public onModelLoaded(vtype: string, model: THREE.ColladaModel) {
+    this.graphRenderer.addVertexRenderingPrototype(vtype, model.scene)
+
+    this.modelsLoaded = this.modelsLoaded+1;
+    if (this.modelsLoaded >= this.modelsToLoad) {
+      EnterpriseInitialDataLoader.initializeGraphModel(this.graphModel);
+      this.graphRenderer.autoLayout();
+      this.graphRenderer.createControls();
+      this.graphRenderer.startRenderingLoop();
+    }
   }
 
 

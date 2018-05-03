@@ -1,13 +1,14 @@
-import * as THREE from 'three';
-import {GraphModel} from "../graph-model/graph-model";
+import * as THREE from "three";
+import {Graph} from "../graph-model/graph";
 import {RenderedVertex} from "../graph-renderer/rendered-object";
 
+
 export class GraphControl {
-  graphModel: GraphModel;
+  graphModel: Graph;
   public controls: THREE.OrbitControls;
   private dragControls: THREE.DragControls;
 
-  constructor(graphModel: GraphModel) {
+  constructor(graphModel: Graph) {
     this.graphModel = graphModel;
   }
 
@@ -45,7 +46,7 @@ export class GraphControl {
     });
   }
 
-  updateDragControls(camera: THREE.Camera, domElement?: HTMLElement) {
+  updateDragControls(camera: THREE.PerspectiveCamera, domElement?: HTMLElement) {
     this.dragControls.dispose();
     this.createDragControls(camera, domElement);
   }

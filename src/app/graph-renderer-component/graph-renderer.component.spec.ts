@@ -1,6 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import {GraphRendererComponent} from "./graph-renderer.component";
 
-import { GraphRendererComponent } from './graph-renderer.component';
 
 describe('GraphRendererComponent', () => {
   let component: GraphRendererComponent;

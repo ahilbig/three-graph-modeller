@@ -11,7 +11,7 @@
     - Angular + Typescript wanted
  */
 
-import * as THREE from 'three';
+import * as THREE from "three";
 import {RenderedObject} from "../graph-renderer/rendered-object";
 
 abstract class TextField extends RenderedObject {
@@ -67,7 +67,7 @@ export class CanvasTextField extends TextField {
 
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D;
-  private mesh: THREE.Object3D;
+  private mesh: THREE.Mesh;
   private fillStyle: string = "rgba(0,0,255,1)";
   private font: string = "20px Arial";
 

@@ -1,13 +1,16 @@
-import * as THREE from 'three';
-import * as THREEx from 'threex.domevents';
+import * as THREE from "three";
+
 import {Vertex} from "../graph-model/vertex";
+import {Edge} from "../graph-model/edge";
+import {THREEx} from "threex.domevents";
+
 
 export class RenderObjectController {
   static instance: RenderObjectController = new RenderObjectController();
-  _domEvents: THREEx.DomEvents;
+  _domEvents:  THREEx.DomEvents;
 
   static setupDomEvents(camera: THREE.Camera, domElement?: HTMLElement) {
-    RenderObjectController.instance._domEvents = new THREEx.THREEx.DomEvents(camera, domElement);
+    RenderObjectController.instance._domEvents = new THREEx.DomEvents(camera, domElement);
   }
 
   addEventListener(object3D: THREE.Object3D, type: string, listener: (event: Event) => void, withBoundingBox: boolean) {
@@ -51,4 +54,4 @@ export function extend<T, U>(first: T, second: U): T & U {
 }
 
 export type RenderedVertex = Vertex & RenderedObject & THREE.Object3D;
-export type RenderedEdge = Vertex & RenderedObject & THREE.Object3D;
+export type RenderedEdge = Edge & RenderedObject & THREE.Line;
