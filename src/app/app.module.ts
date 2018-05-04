@@ -5,18 +5,20 @@ import {HttpModule} from '@angular/http';
 
 import {AppComponent} from './app.component';
 import {GraphRendererComponent} from './graph-renderer-component/graph-renderer.component';
-import {ModalFormComponent} from './modal-form/modal-form.component';
+import {ModalFormComponent} from './modal-form-component/modal-form.component';
+import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 
 @NgModule({
   declarations: [
     AppComponent,
-    GraphRendererComponent,
-    ModalFormComponent
+    ModalFormComponent,
+    GraphRendererComponent
   ],
   imports: [
     BrowserModule,
     FormsModule,
-    HttpModule
+    HttpModule,
+    NgbModule.forRoot()
   ],
   providers: [],
   bootstrap: [AppComponent]
