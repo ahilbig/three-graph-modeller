@@ -1,16 +1,14 @@
-import * as THREE from "three";
-
-import {Vertex} from "../graph-model/vertex";
-import {Edge} from "../graph-model/edge";
-import {THREEx} from "threex.domevents";
-
+import * as THREE from 'three';
+import {Vertex} from '../graph-model/vertex';
+import {Edge} from '../graph-model/edge';
+import DomEvents from 'threex.domevents';
 
 export class RenderObjectController {
   static instance: RenderObjectController = new RenderObjectController();
-  _domEvents:  THREEx.DomEvents;
+  _domEvents: DomEvents;
 
   static setupDomEvents(camera: THREE.Camera, domElement?: HTMLElement) {
-    RenderObjectController.instance._domEvents = new THREEx.DomEvents(camera, domElement);
+    RenderObjectController.instance._domEvents = new DomEvents(camera, domElement);
   }
 
   addEventListener(object3D: THREE.Object3D, type: string, listener: (event: Event) => void, withBoundingBox: boolean) {
@@ -31,21 +29,21 @@ export class RenderedObject {
     if (this.isObject3D()) {
       return this;
     } else {
-      throw new Error("GraphModeller type error - object " + this + " is no 3D Object");
+      throw new Error('GraphModeller type error - object ' + this + ' is no 3D Object');
     }
   }
 }
 
 
 export function extend<T, U>(first: T, second: U): T & U {
-  let result = <T & U> first;
+  const result = <T & U> first;
   /*
   let result = <T & U>{};
   for (let id in first) {
     (<any>result)[id] = (<any>first)[id];
   }
   */
-  for (let id in second) {
+  for (const id in second) {
     if (!result.hasOwnProperty(id)) {
       (<any>result)[id] = (<any>second)[id];
     }

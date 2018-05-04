@@ -1,7 +1,7 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
 class VertexRenderingInfo {
-  vid : string;
+  vid: string;
   attachedToVertexId: string;
 }
 

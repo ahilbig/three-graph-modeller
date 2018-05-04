@@ -1,43 +1,34 @@
 import {Vertex} from './vertex';
 import {Edge} from './edge';
-import {AutoGraphLayouter} from "../graph-renderer/graph-renderer.api";
-import {RenderedEdge, RenderedVertex} from "../graph-renderer/rendered-object";
-import {IDictionary} from "../../../lib/util";
+import {AutoGraphLayouter} from '../graph-renderer/graph-renderer.api';
+import {RenderedEdge, RenderedVertex} from '../graph-renderer/rendered-object';
+import {IDictionary} from '../../../lib/util';
 
 export class Graph {
+  graphRenderer: AutoGraphLayouter;
+  private autoLayoutEnabled = true;
+
   constructor(graphRenderer?: AutoGraphLayouter) {
     this.graphRenderer = graphRenderer;
   }
 
-  initialize(vertexes: Vertex[], edges: Edge[], metadata: { name: string }) {
-    this._metadata = metadata;
-    this.autoLayoutEnabled = false;
-    this.initializeVertexArray(vertexes);
-    this.initializeEdges(edges);
-    this.graphRenderer.autoLayout();
-    this.autoLayoutEnabled = true;
+  private _vertexes: IDictionary<RenderedVertex> = {};
+
+  get vertexes(): IDictionary<RenderedVertex> {
+    return this._vertexes;
   }
 
-  private _vertexes: IDictionary<RenderedVertex> = {};
   private _edges: RenderedEdge[] = [];
 
+  get edges(): RenderedEdge[] {
+    return this._edges;
+  }
+
+  set edges(value: RenderedEdge[]) {
+    this._edges = value;
+  }
+
   private _metadata;
-  private _vertexCount = 0;
-
-  graphRenderer: AutoGraphLayouter;
-  private autoLayoutEnabled = true;
-
-  private initializeVertexArray(vertexes: Vertex[]) {
-    for (let vertex of vertexes) {
-      this.addVertex(vertex);
-    }
-  }
-
-  private initializeEdges(edges: Edge[]) {
-    for (let edge of edges) {
-      this.addEdge(edge);
-    }
-  }
 
   get metadata() {
     return this._metadata;
@@ -47,16 +38,19 @@ export class Graph {
     this._metadata = value;
   }
 
-  get vertexes(): IDictionary<RenderedVertex> {
-    return this._vertexes;
+  private _vertexCount = 0;
+
+  get vertexCount() {
+    return this._vertexCount;
   }
 
-  get edges(): RenderedEdge[] {
-    return this._edges;
-  }
-
-  set edges(value: RenderedEdge[]) {
-    this._edges = value;
+  initialize(vertexes: Vertex[], edges: Edge[], metadata: { name: string }) {
+    this._metadata = metadata;
+    this.autoLayoutEnabled = false;
+    this.initializeVertexArray(vertexes);
+    this.initializeEdges(edges);
+    this.graphRenderer.autoLayout();
+    this.autoLayoutEnabled = true;
   }
 
   findVertexById(id) {
@@ -72,7 +66,7 @@ export class Graph {
   }
 
   addVertex(vertex: Vertex) {
-    let id = vertex.vid;
+    const id = vertex.vid;
     if (!this._vertexes[id]) {
       this._vertexCount++;
     }
@@ -85,14 +79,14 @@ export class Graph {
   }
 
   cloneVertex(vid: string): Vertex {
-    var clonedVertex = this.graphRenderer.cloneRenderedVertex(this.vertexes[vid]);
+    const clonedVertex = this.graphRenderer.cloneRenderedVertex(this.vertexes[vid]);
     if (clonedVertex) {
       this._vertexCount++;
       if (this.autoLayoutEnabled) {
         this.graphRenderer.autoLayoutAddedVertex(clonedVertex);
       }
     }
-    return clonedVertex
+    return clonedVertex;
   }
 
   addEdge(edge: Edge) {
@@ -113,16 +107,26 @@ export class Graph {
     }
   }
 
-  get vertexCount() {
-    return this._vertexCount
-  }
-
   getVertexArray() {
-    var arr = [];
-    for (let id in this.vertexes) {
-      arr.push(this.vertexes[id]);
+    const arr = [];
+    for (const id in this.vertexes) {
+      if (this.vertexes.hasOwnProperty(id)) {
+        arr.push(this.vertexes[id]);
+      }
     }
     return arr;
+  }
+
+  private initializeVertexArray(vertexes: Vertex[]) {
+    for (const vertex of vertexes) {
+      this.addVertex(vertex);
+    }
+  }
+
+  private initializeEdges(edges: Edge[]) {
+    for (const edge of edges) {
+      this.addEdge(edge);
+    }
   }
 }
 

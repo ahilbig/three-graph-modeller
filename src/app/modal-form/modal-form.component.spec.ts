@@ -1,20 +1,20 @@
 import {async, ComponentFixture, TestBed} from '@angular/core/testing';
-import {GraphRendererComponent} from './graph-renderer.component';
 
+import {ModalFormComponent} from './modal-form.component';
 
-describe('GraphRendererComponent', () => {
-  let component: GraphRendererComponent;
-  let fixture: ComponentFixture<GraphRendererComponent>;
+describe('ModalFormComponent', () => {
+  let component: ModalFormComponent;
+  let fixture: ComponentFixture<ModalFormComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ GraphRendererComponent ]
+      declarations: [ModalFormComponent]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(GraphRendererComponent);
+    fixture = TestBed.createComponent(ModalFormComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

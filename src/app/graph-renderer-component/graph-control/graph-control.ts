@@ -1,6 +1,6 @@
-import * as THREE from "three";
-import {Graph} from "../graph-model/graph";
-import {RenderedVertex} from "../graph-renderer/rendered-object";
+import * as THREE from 'three';
+import {Graph} from '../graph-model/graph';
+import {RenderedVertex} from '../graph-renderer/rendered-object';
 
 
 export class GraphControl {
@@ -13,20 +13,20 @@ export class GraphControl {
   }
 
   addVertexControls(obj: RenderedVertex) {
-    obj.addEventListener("dblclick", (event:Event) => {
+    obj.addEventListener('dblclick', (event: Event) => {
       this.graphModel.cloneVertex(obj.vid);
-    })
+    });
   }
 
   generateCloneId(id: string): string {
     // Use -c seperator to split original id from clone index (if id is not id of a clone then the resulting array will have length 1)
-    var splitId = id.split('-c');
-    var newCloneIndex=splitId.length==1 ? 1: parseInt(splitId[1])+1;
+    const splitId = id.split('-c');
+    const newCloneIndex = splitId.length === 1 ? 1 : parseInt(splitId[1], 10) + 1;
 
-    var candidateId = splitId[0] + '-c' + newCloneIndex;
+    const candidateId = splitId[0] + '-c' + newCloneIndex;
 
     // Return candidate Id if not exists, otherwise calculate next available clone id recursively
-    return this.graphModel.vertexes[candidateId] ? this.generateCloneId(candidateId): candidateId;
+    return this.graphModel.vertexes[candidateId] ? this.generateCloneId(candidateId) : candidateId;
   }
 
   createDragControls(camera: THREE.Camera, domElement?: HTMLElement) {
@@ -38,7 +38,7 @@ export class GraphControl {
       component.controls.enabled = false;
     });
     this.dragControls.addEventListener('dragend', (event: Event) => {
-      console.log("dragend event detected, enabling controls");
+      console.log('dragend event detected, enabling controls');
       component.controls.enabled = true;
     });
     this.dragControls.addEventListener('drag', (event: Event) => {

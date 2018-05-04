@@ -11,8 +11,8 @@
     - Angular + Typescript wanted
  */
 
-import * as THREE from "three";
-import {RenderedObject} from "../graph-renderer/rendered-object";
+import * as THREE from 'three';
+import {RenderedObject} from '../graph-renderer/rendered-object';
 
 abstract class TextField extends RenderedObject {
   id: string;
@@ -25,7 +25,7 @@ abstract class TextField extends RenderedObject {
     super();
     this.parentObject3D = parentObject3D;
     this._text = text;
-    this.dirty = (text != undefined);
+    this.dirty = (text !== undefined);
     this.id = id;
   }
 
@@ -43,7 +43,7 @@ abstract class TextField extends RenderedObject {
   drawText(text: string) {
     this.text = text;
     this.draw(true);
-  };
+  }
 
 
   get object3dId() {
@@ -68,18 +68,20 @@ export class CanvasTextField extends TextField {
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D;
   private mesh: THREE.Mesh;
-  private fillStyle: string = "rgba(0,0,255,1)";
-  private font: string = "20px Arial";
+  private fillStyle = 'rgba(0,0,255,1)';
+  private font = '20px Arial';
 
   static attach(parentObject3D, defaultObjectSize: number, text: string) {
     if (parentObject3D instanceof THREE.Object3D) {
       return new CanvasTextField(parentObject3D, defaultObjectSize, text, true);
     } else {
-      throw new Error("Unsupported Operation 'CanvasTextField.attach' for object " + parentObject3D.valueOf() + " of type " + parentObject3D.type);
+      throw new Error('Unsupported Operation \'CanvasTextField.attach\' for object '
+        + parentObject3D.valueOf() + ' of type ' + parentObject3D.type);
     }
   }
 
-  constructor(parentObject: THREE.Object3D, defaultObjectSize: number, text?: string, drawNow?: boolean, fillStyle?: string, font?: string, id?: string) {
+  constructor(parentObject: THREE.Object3D, defaultObjectSize: number,
+              text?: string, drawNow?: boolean, fillStyle?: string, font?: string, id?: string) {
     super(parentObject, text, id);
     this.defaultObjectSize = defaultObjectSize;
     this.dirty = true;
@@ -108,14 +110,14 @@ export class CanvasTextField extends TextField {
 
   updateTextStyle() {
     // Only draw now if the text is assumed to be not dirty already because of other reasons..
-    let drawNow = !this.dirty;
+    const drawNow = !this.dirty;
 
     if (this.context) {
-      if (this.font != this.context.font) {
+      if (this.font !== this.context.font) {
         this.context.font = this.font;
         this.dirty = true;
       }
-      if (this.fillStyle != this.context.fillStyle) {
+      if (this.fillStyle !== this.context.fillStyle) {
         this.context.fillStyle = this.fillStyle;
         this.dirty = true;
       }
@@ -127,24 +129,24 @@ export class CanvasTextField extends TextField {
 
   draw(dirty?: boolean) {
     if ((dirty || this.dirty) && this.text) {
-      console.log("Redrawing text field");
+      console.log('Redrawing text field');
       this.initCanvas();
 
 
-      var borderX = 30;
-      var borderY = 30;
-      var lineHeight = 25;
+      const borderX = 30;
+      const borderY = 30;
+      const lineHeight = 25;
 
 
-      var maxWidth = this.canvas.width - 2 * borderX;
-      var scaleCanvas2Object = this.defaultObjectSize / this.canvas.width * 3;
-      var textHeight = this.wrapText(borderX, borderY, maxWidth, lineHeight);
+      const maxWidth = this.canvas.width - 2 * borderX;
+      const scaleCanvas2Object = this.defaultObjectSize / this.canvas.width * 3;
+      const textHeight = this.wrapText(borderX, borderY, maxWidth, lineHeight);
 
       // canvas contents will be used for a texture
-      var texture1 = new THREE.Texture(this.canvas);
+      const texture1 = new THREE.Texture(this.canvas);
       texture1.needsUpdate = true;
 
-      var material1 = new THREE.MeshBasicMaterial({map: texture1, side: THREE.DoubleSide});
+      const material1 = new THREE.MeshBasicMaterial({map: texture1, side: THREE.DoubleSide});
       material1.transparent = true;
 
       this.mesh = new THREE.Mesh(
@@ -167,19 +169,18 @@ export class CanvasTextField extends TextField {
   }
 
   wrapText(x, y, maxWidth, lineHeight): number {
-    var words = this.text.split(' ');
-    var line = '';
+    const words = this.text.split(' ');
+    let line = '';
 
-    for (var n = 0; n < words.length; n++) {
-      var testLine = line + words[n] + ' ';
-      var metrics = this.context.measureText(testLine);
-      var testWidth = metrics.width;
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
+      const metrics = this.context.measureText(testLine);
+      const testWidth = metrics.width;
       if (testWidth > maxWidth && n > 0) {
         this.context.fillText(line, x, y);
         line = words[n] + ' ';
         y += lineHeight;
-      }
-      else {
+      } else {
         line = testLine;
       }
     }
@@ -196,10 +197,11 @@ export class CanvasTextField extends TextField {
 
 export class CanvasInputField extends CanvasTextField {
 
+  static fillStyleEditable = 'rgba(0,0,255,1)';
+  static fillStyleNotEditable = 'rgba(0,255,255,1)';
+
   private _editable: boolean;
   private _active: boolean;
-  static fillStyleEditable = "rgba(0,0,255,1)";
-  static fillStyleNotEditable = "rgba(0,255,255,1)";
 
   static getFillstyle(editable: boolean) {
     return editable ?
@@ -215,7 +217,8 @@ export class CanvasInputField extends CanvasTextField {
     if (parentObject3D instanceof THREE.Object3D) {
       return new CanvasInputField(parentObject3D, defaultObjectSize, text, true, editable);
     } else {
-      throw new Error("Unsupported Operation 'CanvasInputField.attach' for object " + parentObject3D.valueOf() + " of type " + parentObject3D.type);
+      throw new Error('Unsupported Operation \'CanvasInputField.attach\' for object '
+        + parentObject3D.valueOf() + ' of type ' + parentObject3D.type);
     }
   }
 

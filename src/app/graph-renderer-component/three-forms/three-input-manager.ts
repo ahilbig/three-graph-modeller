@@ -11,10 +11,10 @@
     - Angular + Typescript wanted
  */
 
-import {HostListener} from "@angular/core";
-import {CircleAutoGraphRenderer} from "../graph-renderer/three-graph-renderer";
-import {CanvasInputField} from "./three-text-field";
-import {IDictionary} from "../../../lib/util";
+import {HostListener} from '@angular/core';
+import {CircleAutoGraphRenderer} from '../graph-renderer/three-graph-renderer';
+import {CanvasInputField} from './three-text-field';
+import {IDictionary} from '../../../lib/util';
 
 export class ThreeInputManager {
 
@@ -31,7 +31,7 @@ export class ThreeInputManager {
   }
 
   initKeyBindings() {
-    var comp = this;
+    const comp = this;
     Mousetrap.bind('backspace', function (ev: KeyboardEvent) {
       comp.ignoreEvent(ev);
       if (comp._activeInputField) {
@@ -68,14 +68,15 @@ export class ThreeInputManager {
       this._ignoredEent = null;
       return true;
     } else {
-      console.log(`Not ignoring the ${ev.key} key, eventIgnored: ${this._eventIgnored}, ignoredEvent.key: ${this._ignoredEent ? this._ignoredEent.key : null}`);
+      console.log(`Not ignoring the ${ev.key} key,
+       eventIgnored: ${this._eventIgnored}, ignoredEvent.key: ${this._ignoredEent ? this._ignoredEent.key : null}`);
       return false;
     }
 
   }
 
   registerInputField(inputField: CanvasInputField) {
-    var comp = this;
+    const comp = this;
     this.inputFields[inputField.id] = inputField;
     inputField.addEventListener('click', (event: Event) => {
       comp.activeInputField = inputField;

@@ -1,4 +1,4 @@
-import {extend, RenderedObject} from "../graph-renderer/rendered-object";
+import {extend, RenderedObject} from '../graph-renderer/rendered-object';
 
 export class Edge {
   vertexFromId: string;

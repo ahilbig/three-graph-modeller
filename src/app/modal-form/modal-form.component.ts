@@ -1,16 +1,17 @@
-import { Component, OnInit } from '@angular/core';
-import {NgbModal, ModalDismissReasons} from '@ng-bootstrap/ng-bootstrap';
+import {Component, OnInit} from '@angular/core';
+import {ModalDismissReasons, NgbModal} from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-modal-form-component',
-  templateUrl: './modal-form-component.component.html',
-  styleUrls: ['./modal-form-component.component.css']
+  templateUrl: './modal-form.component.html',
+  styleUrls: ['./modal-form.component.css']
 })
-export class ModalFormComponentComponent implements OnInit {
+export class ModalFormComponent implements OnInit {
+
+  closeResult: string;
 
   ngOnInit() {
   }
-  closeResult: string;
 
   constructor(private modalService: NgbModal) {}
 
@@ -33,7 +34,7 @@ export class ModalFormComponentComponent implements OnInit {
   }
 
   private onSubmitForm(event) {
-    console.log("Form submitted!");
+    console.log('Form submitted!');
   }
 }
 
