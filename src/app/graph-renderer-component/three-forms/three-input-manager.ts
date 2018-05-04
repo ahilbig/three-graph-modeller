@@ -14,7 +14,7 @@
 import {HostListener} from '@angular/core';
 import {CircleAutoGraphRenderer} from '../graph-renderer/three-graph-renderer';
 import {CanvasInputField} from './three-text-field';
-import {IDictionary} from '../../../lib/util';
+import {IDictionary} from '../../shared/util';
 
 export class ThreeInputManager {
 

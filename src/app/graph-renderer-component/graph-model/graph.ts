@@ -2,7 +2,7 @@ import {Vertex} from './vertex';
 import {Edge} from './edge';
 import {AutoGraphLayouter} from '../graph-renderer/graph-renderer.api';
 import {RenderedEdge, RenderedVertex} from '../graph-renderer/rendered-object';
-import {IDictionary} from '../../../lib/util';
+import {IDictionary} from '../../shared/util';
 
 export class Graph {
   graphRenderer: AutoGraphLayouter;

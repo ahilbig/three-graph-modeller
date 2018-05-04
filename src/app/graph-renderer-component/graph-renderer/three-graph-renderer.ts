@@ -9,7 +9,7 @@ import {GraphControl} from '../graph-control/graph-control';
 
 import {extend, RenderedEdge, RenderedObject, RenderedVertex, RenderObjectController} from './rendered-object';
 import {ThreeInputManager} from '../three-forms/three-input-manager';
-import {IDictionary} from '../../../lib/util';
+import {IDictionary} from '../../shared/util';
 
 /**
  * Created by Andreas Hilbig on 11.09.2017.
